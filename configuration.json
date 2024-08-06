@@ -2,6 +2,10 @@
     "language": "中文",
     "now_configuration": "1",
     "configuration": {
-        "1": {}
+        "1": {
+            "audio": {
+                "1": {}
+            }
+        }
     }
 }

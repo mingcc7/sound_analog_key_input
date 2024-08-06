@@ -1,6 +1,19 @@
 {
      "title":"Sound analog key input",
-     "configuration_add":"Add configuration",
      "tips":"Tips",
-     "configuration_name_already_exists":"The configuration name already exists"
+     "success":"Success",
+     "verify":"Verify",
+     "want_to_continue":"Are you sure you want to continue?",
+     "configuration_add":"Add configuration",
+     "configuration_update":"Update configuration",
+     "configuration_delete":"Delete configuration",
+     "configuration_name_already_exists":"The configuration name already exists!",
+     "configuration_name_cannot_be_empty":"The configuration name cannot be empty!",
+     "configuration_now_cannot_be_empty":"The current configuration cannot be empty!",
+     "audio_add":"Add audio",
+     "audio_update":"Update audio",
+     "audio_delete":"Delete audio",
+     "audio_name_already_exists":"The audio name already exists!",
+     "audio_name_cannot_be_empty":"The audio name cannot be empty!",
+     "audio_now_cannot_be_empty":"The current audio cannot be empty!"
 }
