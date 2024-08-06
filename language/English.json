@@ -15,5 +15,6 @@
      "audio_delete":"Delete audio",
      "audio_name_already_exists":"The audio name already exists!",
      "audio_name_cannot_be_empty":"The audio name cannot be empty!",
-     "audio_now_cannot_be_empty":"The current audio cannot be empty!"
+     "audio_now_cannot_be_empty":"The current audio cannot be empty!",
+     "audio_acquisition":"Audio acquisition"
 }

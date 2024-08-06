@@ -39,6 +39,7 @@ def on_language_combobox_change(*args):
     audio_add_button['text'] = text_json["audio_add"]
     audio_update_button['text'] = text_json["audio_update"]
     audio_delete_button['text'] = text_json["audio_delete"]
+    audio_acquisition_button['text'] = text_json["audio_acquisition"]
 
 # 配置选择
 def on_configuration_combobox_change(*args):
@@ -196,6 +197,10 @@ def on_audio_delete_button_click():
 
             messagebox.showinfo(text_json["tips"], text_json["success"])
 
+# 声音采集
+def on_audio_acquisition_button_click():
+    print()
+
 
 
 
@@ -208,7 +213,7 @@ with open(f"language/{configuration_json["language"]}.json", 'r', encoding='utf-
 window = tk.Tk()
 # 设置窗口的初始大小
 window_width = 500
-window_height = 200
+window_height = 300
 # 调用center_window函数使窗口居中
 center_window(window, window_width, window_height)
 
@@ -283,11 +288,8 @@ audio_delete_button.pack(side=tk.LEFT, padx=5, pady=1)
 
 audio_frame.pack()
 
-
-
-
-# button = tk.Button(window, text="声音信息", command=on_button_click)
-# button.pack()
+audio_acquisition_button = tk.Button(window, command=on_audio_acquisition_button_click)
+audio_acquisition_button.pack(pady=1)
 
 # button = tk.Button(window, text="创建模型", command=on_button_click)
 # button.pack()

@@ -15,5 +15,6 @@
     "audio_delete":"删除声音",
     "audio_name_already_exists":"声音名称已存在！",
     "audio_name_cannot_be_empty":"声音名称不可为空！",
-    "audio_now_cannot_be_empty":"当前声音不可为空！"
+    "audio_now_cannot_be_empty":"当前声音不可为空！",
+    "audio_acquisition":"声音采集"
 }
