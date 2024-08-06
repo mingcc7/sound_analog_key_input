@@ -1,11 +1,6 @@
 {
     "language": "中文",
-    "now_configuration": "1",
+    "now_configuration": "",
     "configuration": {
-        "1": {
-            "audio": {
-                "1": {}
-            }
-        }
     }
 }

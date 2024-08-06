@@ -61,6 +61,8 @@ def on_configuration_add_button_click():
     if configuration_name not in configuration_json["configuration"].keys() and configuration_name != "":
         answer = messagebox.askquestion(text_json["verify"], text_json["want_to_continue"])
         if answer == 'yes':
+            if not os.path.exists("configuration"):
+                os.mkdir(f"configuration")
             os.mkdir(f"configuration/{configuration_name}")
             os.mkdir(f"configuration/{configuration_name}/audio")
             configuration_json["configuration"][configuration_name] = {"audio":{}}
