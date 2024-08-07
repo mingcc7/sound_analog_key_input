@@ -9,7 +9,12 @@ from natsort import natsorted
 from playsound import playsound
 
 
-from audio_acquisition import audioAcquisition
+# from audio_acquisition import audio_acquisition
+# from model_training import model_training
+
+def window_on_resize(event):
+    change_configuration_json("window_width",event.width)
+    change_configuration_json("window_height",event.height)
 
 # 窗口居中
 def center_window(window, width, height):
@@ -55,6 +60,7 @@ def on_language_combobox_change(*args):
     audio_delete_button['text'] = text_json["audio_delete"]
     audio_acquisition_button['text'] = text_json["audio_acquisition"]
     audio_acquisition_stop_button['text'] = text_json["audio_acquisition_stop"]
+    model_training_button['text'] = text_json["model_training"]
 
 # 配置选择
 def on_configuration_combobox_change(*args):
@@ -69,16 +75,14 @@ def on_configuration_combobox_change(*args):
 
 # 更新配置选择
 def update_configuration_combobox(configuration_name):
-    configuration_combo_values = []
-    for key in configuration_json["configuration"].keys():
-        configuration_combo_values.append(key)
+    configuration_combo_values = os.listdir(f"configuration")
     configuration_combo["values"] = configuration_combo_values
     configuration_combo_var.set(configuration_name)
 
 # 添加配置
 def on_configuration_add_button_click():
     configuration_name = configuration_name_entry.get()
-    if configuration_name not in configuration_json["configuration"].keys() and configuration_name != "":
+    if not os.path.exists("configuration/"+configuration_name) and configuration_name != "":
         answer = messagebox.askquestion(text_json["verify"], text_json["want_to_continue"])
         if answer == 'yes':
             if not os.path.exists("configuration"):
@@ -91,8 +95,6 @@ def on_configuration_add_button_click():
                 os.mkdir(f"configuration/{configuration_name}/audio")
             except FileExistsError:
                 print(f"configuration/{configuration_name}/audio already exists")
-            configuration_json["configuration"][configuration_name] = {"audio":{}}
-            change_configuration_json("configuration",configuration_json["configuration"])
 
             # 更新配置选择
             update_configuration_combobox(configuration_name)
@@ -114,9 +116,6 @@ def on_configuration_update_button_click():
         answer = messagebox.askquestion(text_json["verify"], text_json["want_to_continue"])
         if answer == 'yes':
             os.rename(f"configuration/{configuration_combo_var.get()}", f"configuration/{configuration_name}")
-            configuration_json["configuration"][configuration_name] = {"audio":{}}
-            configuration_json["configuration"].pop(configuration_combo_var.get())
-            change_configuration_json("configuration",configuration_json["configuration"])
 
             # 更新配置选择
             update_configuration_combobox(configuration_name)
@@ -137,8 +136,6 @@ def on_configuration_delete_button_click():
         answer = messagebox.askquestion(text_json["verify"], text_json["want_to_continue"])
         if answer == 'yes':
             shutil.rmtree(f"configuration/{configuration_combo_var.get()}")
-            configuration_json["configuration"].pop(configuration_combo_var.get())
-            change_configuration_json("configuration",configuration_json["configuration"])
             configuration_combo_var.set("")
 
             # 更新配置选择
@@ -192,8 +189,8 @@ def on_audio_file_delete_button_click(file_path):
 # 更新声音选择
 def update_audio_combobox():
     audio_combo_values = []
-    for key in configuration_json["configuration"][configuration_combo_var.get()]["audio"].keys():
-        audio_combo_values.append(key)
+    if configuration_combo_var.get() != "":
+        audio_combo_values = os.listdir(f"configuration/{configuration_combo_var.get()}/audio")
     audio_combo["values"] = audio_combo_values
     audio_combo_var.set(audio_name_entry.get())
 
@@ -209,8 +206,6 @@ def on_audio_add_button_click():
                 os.mkdir(f"configuration/{configuration_combo_var.get()}/audio/{audio_name}")
             except FileExistsError:
                 print(f"configuration/{configuration_combo_var.get()}/audio/{audio_name} already exists")
-            configuration_json["configuration"][configuration_combo_var.get()]["audio"][audio_name] = {}
-            change_configuration_json("configuration",configuration_json["configuration"])
 
             # 更新声音选择
             update_audio_combobox()
@@ -234,9 +229,6 @@ def on_audio_update_button_click():
         answer = messagebox.askquestion(text_json["verify"], text_json["want_to_continue"])
         if answer == 'yes':
             os.rename(f"configuration/{configuration_combo_var.get()}/audio/{audio_combo_var.get()}", f"configuration/{configuration_combo_var.get()}/audio/{audio_name}")
-            configuration_json["configuration"][configuration_combo_var.get()]["audio"][audio_name] = {}
-            configuration_json["configuration"][configuration_combo_var.get()]["audio"].pop(audio_combo_var.get())
-            change_configuration_json("configuration",configuration_json["configuration"])
 
             # 更新声音选择
             update_audio_combobox()
@@ -257,8 +249,6 @@ def on_audio_delete_button_click():
         answer = messagebox.askquestion(text_json["verify"], text_json["want_to_continue"])
         if answer == 'yes':
             shutil.rmtree(f"configuration/{configuration_combo_var.get()}/audio/{audio_combo_var.get()}")
-            configuration_json["configuration"][configuration_combo_var.get()]["audio"].pop(audio_combo_var.get())
-            change_configuration_json("configuration",configuration_json["configuration"])
             audio_combo_var.set("")
 
             # 更新声音选择
@@ -274,7 +264,7 @@ def on_audio_acquisition_button_click():
         messagebox.showinfo(text_json["tips"], text_json["audio_now_cannot_be_empty"])
     elif audio_acquisition_thread_stop_flag.is_set():
         audio_acquisition_thread_stop_flag.clear()
-        audio_acquisition_thread = threading.Thread(target=audioAcquisition, args=(False,f"configuration/{configuration_combo_var.get()}/audio/{audio_combo_var.get()}",audio_acquisition_thread_stop_flag))
+        audio_acquisition_thread = threading.Thread(target=audio_acquisition, args=(False,f"configuration/{configuration_combo_var.get()}/audio/{audio_combo_var.get()}",audio_acquisition_thread_stop_flag))
         audio_acquisition_thread.start()
         audio_acquisition_button.config(bg='red')
     else:
@@ -285,6 +275,18 @@ def on_audio_acquisition_stop_button_click():
     audio_acquisition_thread_stop_flag.set()
     audio_acquisition_button.config(bg='SystemButtonFace')
 
+# 模型训练
+def on_model_training_button_click():
+    audio_dirs = os.listdir(f"configuration/{configuration_combo_var.get()}/audio")
+    audio_json = {}
+    for item in audio_dirs:
+        audio_json[item] = {}
+        audio_file_dirs = os.listdir(f"configuration/{configuration_combo_var.get()}/audio/{item}")
+        for file_item in audio_file_dirs:
+            audio_json[item][file_item] = {}
+
+    model_training(audio_json,f"configuration/{configuration_combo_var.get()}")
+
 
 with open("configuration.json", 'r', encoding='utf-8') as file:
     configuration_json = json.load(file)
@@ -293,11 +295,8 @@ with open(f"language/{configuration_json['language']}.json", 'r', encoding='utf-
     text_json = json.load(file)
 
 window = tk.Tk()
-# 设置窗口的初始大小
-window_width = 500
-window_height = 300
 # 调用center_window函数使窗口居中
-center_window(window, window_width, window_height)
+center_window(window, configuration_json["window_width"], configuration_json["window_height"])
 
 # 居中容器
 center_frame = tk.Frame(window)
@@ -318,9 +317,7 @@ language_combo = ttk.Combobox(left_frame, textvariable=language_combo_var, value
 language_combo.pack(pady=1)
 
 # 配置选择
-configuration_combo_values = []
-for key in configuration_json["configuration"].keys():
-    configuration_combo_values.append(key)
+configuration_combo_values = os.listdir(f"configuration")
 configuration_combo_var = tk.StringVar()
 configuration_combo_var.trace_add('write', on_configuration_combobox_change)
 configuration_combo = ttk.Combobox(left_frame, textvariable=configuration_combo_var, values=configuration_combo_values, state='readonly')
@@ -406,11 +403,9 @@ audio_file_scrollbar.config(command=audio_file_canvas.yview)
 audio_file_frame = tk.Frame(audio_file_canvas)
 audio_file_canvas.create_window((0, 0), window=audio_file_frame, anchor='nw')
 
-
-
-
-# button = tk.Button(window, text="创建模型", command=on_button_click)
-# button.pack()
+# 模型训练
+model_training_button = tk.Button(left_frame, command=on_model_training_button_click)
+model_training_button.pack()
 
 # button = tk.Button(window, text="测试模型", command=on_button_click)
 # button.pack()
@@ -426,5 +421,6 @@ configuration_combo.set(configuration_json["now_configuration"])
 
 # 绑定关闭事件
 window.protocol("WM_DELETE_WINDOW", delete_window)
+window.bind("<Configure>", window_on_resize)
 
 window.mainloop()

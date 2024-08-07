@@ -22,7 +22,7 @@ def predict_sound_type(model, features):
     predicted_class = np.argmax(prediction, axis=1)
     return predicted_class[0]  # 返回预测的类别索引
 
-def audioAcquisition(use_model,save_path,stop_flag):
+def audio_acquisition(use_model,save_path,stop_flag):
     if use_model:
         # 加载模型
         model = load_model('my_model.keras')

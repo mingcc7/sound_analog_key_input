@@ -20,5 +20,6 @@
     "audio_now_cannot_be_empty":"当前声音不可为空！",
     "audio_acquisition":"声音采集",
     "audio_acquisition_stop":"声音采集停止",
-    "audio_acquisition_listening":"声音采集中！"
+    "audio_acquisition_listening":"声音采集中！",
+    "model_training":"模型训练"
 }

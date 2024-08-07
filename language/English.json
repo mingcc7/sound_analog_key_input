@@ -20,5 +20,6 @@
      "audio_now_cannot_be_empty":"The current audio cannot be empty!",
      "audio_acquisition":"Audio acquisition",
      "audio_acquisition_stop":"Audio acquisition stop",
-     "audio_acquisition_listening":"Audio acquisition listening!"
+     "audio_acquisition_listening":"Audio acquisition listening!",
+     "model_training":"Model training"
 }
