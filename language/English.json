@@ -3,6 +3,8 @@
      "tips":"Tips",
      "success":"Success",
      "verify":"Verify",
+     "delete":"Delete",
+     "play":"Play",
      "want_to_continue":"Are you sure you want to continue?",
      "configuration_add":"Add configuration",
      "configuration_update":"Update configuration",
@@ -16,5 +18,7 @@
      "audio_name_already_exists":"The audio name already exists!",
      "audio_name_cannot_be_empty":"The audio name cannot be empty!",
      "audio_now_cannot_be_empty":"The current audio cannot be empty!",
-     "audio_acquisition":"Audio acquisition"
+     "audio_acquisition":"Audio acquisition",
+     "audio_acquisition_stop":"Audio acquisition stop",
+     "audio_acquisition_listening":"Audio acquisition listening!"
 }

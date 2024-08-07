@@ -1,5 +1,16 @@
 {
     "language": "中文",
-    "now_configuration": "",
-    "configuration": {}
+    "now_configuration": "1",
+    "configuration": {
+        "1": {
+            "audio": {
+                "鼓面": {},
+                "边缘": {},
+                "鼓面1": {}
+            }
+        },
+        "11": {
+            "audio": {}
+        }
+    }
 }

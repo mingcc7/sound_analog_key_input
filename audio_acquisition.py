@@ -5,6 +5,7 @@ from tensorflow.keras.models import load_model
 from sklearn.preprocessing import LabelEncoder
 import wave
 from pydub import AudioSegment
+import os
 
 # 定义函数以从音频数据中提取 MFCC 特征
 def extract_features_from_audio(data, sample_rate):
@@ -21,87 +22,91 @@ def predict_sound_type(model, features):
     predicted_class = np.argmax(prediction, axis=1)
     return predicted_class[0]  # 返回预测的类别索引
 
-# 加载模型
-model = load_model('my_model.keras')
+def audioAcquisition(use_model,save_path,stop_flag):
+    if use_model:
+        # 加载模型
+        model = load_model('my_model.keras')
 
-# 加载标签编码器
-encoder = LabelEncoder()
-encoder.classes_ = np.load('classes.npy', allow_pickle=True)
+        # 加载标签编码器
+        encoder = LabelEncoder()
+        encoder.classes_ = np.load('classes.npy', allow_pickle=True)
 
-# 实时音频采集参数
-CHUNK = 1024  # 每次读取的帧数
-FORMAT = pyaudio.paInt16  # 采样格式
-CHANNELS = 1  # 单声道
-RATE = 44100  # 采样率
-RECORD_SECONDS = 0.03  # 每次采集的秒数
+    # 实时音频采集参数
+    CHUNK = 1024  # 每次读取的帧数
+    FORMAT = pyaudio.paInt16  # 采样格式
+    CHANNELS = 1  # 单声道
+    RATE = 44100  # 采样率
+    RECORD_SECONDS = 0.03  # 每次采集的秒数
 
-# 设置声音活动检测的阈值
-THRESHOLD = 0.01  # 根据实际情况调整
+    # 设置声音活动检测的阈值
+    THRESHOLD = 0.01  # 根据实际情况调整
 
-# 初始化 PyAudio
-p = pyaudio.PyAudio()
+    # 初始化 PyAudio
+    p = pyaudio.PyAudio()
 
-# 打开音频流
-stream = p.open(format=FORMAT,
-                channels=CHANNELS,
-                rate=RATE,
-                input=True,
-                frames_per_buffer=CHUNK)
+    # 打开音频流
+    stream = p.open(format=FORMAT,
+                    channels=CHANNELS,
+                    rate=RATE,
+                    input=True,
+                    frames_per_buffer=CHUNK)
 
-print("Listening...")
+    print("Listening...")
 
-try:
-    save_index = 1
-    frames_list = []
-    while True:
-        frames = []
+    try:
+        save_index = 1
+        frames_list = []
+        while not stop_flag.is_set():
+            frames = []
 
-        for i in range(0, int(RATE / CHUNK * RECORD_SECONDS)):
-            data = stream.read(CHUNK)
-            frames.append(data)
+            for i in range(0, int(RATE / CHUNK * RECORD_SECONDS)):
+                data = stream.read(CHUNK)
+                frames.append(data)
 
-        # 将音频数据转换为 numpy 数组
-        audio_data = np.frombuffer(b''.join(frames), dtype=np.int16)
-
-        # 计算音频片段的平均能量
-        energy = np.mean(np.abs(audio_data)) / 32767.0
-
-        if energy > THRESHOLD:
-            frames_list.extend(frames)
-        elif len(frames_list) > 0:
             # 将音频数据转换为 numpy 数组
-            audio_data = np.frombuffer(b''.join(frames_list), dtype=np.int16)
+            audio_data = np.frombuffer(b''.join(frames), dtype=np.int16)
 
-            # 提取 MFCC 特征
-            mfccs = extract_features_from_audio(audio_data, RATE)
+            # 计算音频片段的平均能量
+            energy = np.mean(np.abs(audio_data)) / 32767.0
 
-            # 预测声音类型
-            predicted_class = predict_sound_type(model, mfccs)
+            if energy > THRESHOLD:
+                frames_list.extend(frames)
+            elif len(frames_list) > 0:
+                if use_model:
+                    # 将音频数据转换为 numpy 数组
+                    audio_data = np.frombuffer(b''.join(frames_list), dtype=np.int16)
 
-            # 将整数类别转换回原始类别标签
-            predicted_label = encoder.inverse_transform([predicted_class])
-            print(f"Predicted sound type: {predicted_label[0]}")
+                    # 提取 MFCC 特征
+                    mfccs = extract_features_from_audio(audio_data, RATE)
 
+                    # 预测声音类型
+                    predicted_class = predict_sound_type(model, mfccs)
 
-            #保存音频文件
-            # print(f"Saving audio...{save_index}")
-            # save_path = f"audio_files/{save_index}.wav"
-            # # 保存为 .wav 文件
-            # with wave.open(save_path, "wb") as wf:
-            #     wf.setnchannels(CHANNELS)
-            #     wf.setsampwidth(p.get_sample_size(FORMAT))
-            #     wf.setframerate(RATE)
-            #     wf.writeframes(b''.join(frames_list))
-            # save_index+=1
+                    # 将整数类别转换回原始类别标签
+                    predicted_label = encoder.inverse_transform([predicted_class])
+                    print(f"Predicted sound type: {predicted_label[0]}")
+                else:
+                    audio_dirs = os.listdir(save_path)
+                    for item in audio_dirs:
+                        if save_index <= int(item.split('.')[0]):
+                            save_index = int(item.split('.')[0])+1
+                    #保存音频文件
+                    print(f"Saving audio...{save_index}")
+                    file_save_path = f"{save_path}/{save_index}.wav"
+                    # 保存为 .wav 文件
+                    with wave.open(file_save_path, "wb") as wf:
+                        wf.setnchannels(CHANNELS)
+                        wf.setsampwidth(p.get_sample_size(FORMAT))
+                        wf.setframerate(RATE)
+                        wf.writeframes(b''.join(frames_list))
+                
+                frames_list = []
 
-            
-            frames_list = []
+    except KeyboardInterrupt:
+        pass
 
-except KeyboardInterrupt:
-    pass
-
-finally:
-    stream.stop_stream()
-    stream.close()
-    p.terminate()
-    print("Stopped listening.")
+    finally:
+        stream.stop_stream()
+        stream.close()
+        p.terminate()
+        print("Stopped listening.")
