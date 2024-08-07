@@ -1,11 +1,7 @@
 {
-    "window_width": 436,
-    "window_height": 215,
+    "window_width": 485,
+    "window_height": 255,
     "language": "中文",
-    "now_configuration": "1",
-    "configuration": {
-        "11": {
-            "audio": {}
-        }
-    }
+    "now_configuration": "",
+    "configuration": {}
 }

@@ -6,30 +6,21 @@ from sklearn.preprocessing import LabelEncoder
 import wave
 from pydub import AudioSegment
 import os
+import threading
+import queue
 
-# 定义函数以从音频数据中提取 MFCC 特征
-def extract_features_from_audio(data, sample_rate):
-    # 将整型数据转换为浮点型数据
-    data = data.astype(np.float32) / 32767.0
+from model_training import extract_features
 
-    mfccs = librosa.feature.mfcc(y=data, sr=sample_rate, n_mfcc=40, n_fft=1024)
-    mfccs_processed = np.mean(mfccs.T, axis=0)
-    return mfccs_processed.reshape(1, 40, 1, 1)  # 调整形状以匹配模型输入
+acquisition_audio_name_queue = queue.Queue()
 
-# 定义预测函数
-def predict_sound_type(model, features):
-    prediction = model.predict(features)
-    predicted_class = np.argmax(prediction, axis=1)
-    return predicted_class[0]  # 返回预测的类别索引
-
-def audio_acquisition(use_model,save_path,stop_flag):
+def audio_acquisition(use_model,save_path,stop_flag,save_flag):
     if use_model:
         # 加载模型
-        model = load_model('my_model.keras')
+        model = load_model(save_path+'/model.keras')
 
         # 加载标签编码器
         encoder = LabelEncoder()
-        encoder.classes_ = np.load('classes.npy', allow_pickle=True)
+        encoder.classes_ = np.load(save_path+'/classes.npy', allow_pickle=True)
 
     # 实时音频采集参数
     CHUNK = 1024  # 每次读取的帧数
@@ -73,18 +64,28 @@ def audio_acquisition(use_model,save_path,stop_flag):
                 frames_list.extend(frames)
             elif len(frames_list) > 0:
                 if use_model:
-                    # 将音频数据转换为 numpy 数组
-                    audio_data = np.frombuffer(b''.join(frames_list), dtype=np.int16)
+                    # 保存为 .wav 文件
+                    with wave.open("temp.wav", "wb") as wf:
+                        wf.setnchannels(CHANNELS)
+                        wf.setsampwidth(p.get_sample_size(FORMAT))
+                        wf.setframerate(RATE)
+                        wf.writeframes(b''.join(frames_list))
+                    mfccs = extract_features("temp.wav")
 
-                    # 提取 MFCC 特征
-                    mfccs = extract_features_from_audio(audio_data, RATE)
+                    # 准备输入数据
+                    input_data = mfccs.reshape(1, 40, 1, 1)  # 重塑为模型输入的形状
 
-                    # 预测声音类型
-                    predicted_class = predict_sound_type(model, mfccs)
+                    # 使用模型进行预测
+                    predictions = model.predict(input_data)
+
+                    # 获取预测结果
+                    predicted_class = np.argmax(predictions[0])
 
                     # 将整数类别转换回原始类别标签
                     predicted_label = encoder.inverse_transform([predicted_class])
                     print(f"Predicted sound type: {predicted_label[0]}")
+                    acquisition_audio_name_queue.put(predicted_label[0])
+                    save_flag.set()
                 else:
                     audio_dirs = os.listdir(save_path)
                     for item in audio_dirs:
@@ -99,6 +100,7 @@ def audio_acquisition(use_model,save_path,stop_flag):
                         wf.setsampwidth(p.get_sample_size(FORMAT))
                         wf.setframerate(RATE)
                         wf.writeframes(b''.join(frames_list))
+                    save_flag.set()
                 
                 frames_list = []
 

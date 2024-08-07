@@ -9,7 +9,7 @@ from tensorflow.keras.utils import to_categorical
 
 # 数据预处理
 def extract_features(file_path):
-    y, sr = librosa.load(file_path, duration=3, offset=0.5)
+    y, sr = librosa.load(file_path)
     mfccs = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=40)
     mfccs_processed = np.mean(mfccs.T,axis=0)
     return mfccs_processed

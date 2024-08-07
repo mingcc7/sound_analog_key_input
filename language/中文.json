@@ -21,5 +21,6 @@
     "audio_acquisition":"声音采集",
     "audio_acquisition_stop":"声音采集停止",
     "audio_acquisition_listening":"声音采集中！",
-    "model_training":"模型训练"
+    "model_training":"模型训练",
+    "audio_file_cannot_be_empty":"声音文件不可为空！"
 }
