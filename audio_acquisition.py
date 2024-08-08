@@ -6,6 +6,7 @@ import wave
 import os
 import queue
 
+
 from model_training import extract_features
 
 acquisition_audio_name_queue = queue.Queue()

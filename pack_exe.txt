@@ -1,5 +1,0 @@
-打包成exe
-pyinstaller --onefile --windowed run.py
-
-pip install pipreqs
-pipreqs . --force

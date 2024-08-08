@@ -7,9 +7,12 @@ from keras.api.layers import InputLayer, Conv2D, MaxPooling2D, Flatten, Dense
 from keras.api.utils import to_categorical
 import queue
 from keras.api.callbacks import Callback, ProgbarLogger
-
+from os import path
 
 model_training_queue = queue.Queue()
+
+# 第一次加载慢
+librosa.load(path.abspath(path.join(path.dirname(__file__), "temp.wav")))
 
 # 数据预处理
 def extract_features(file_path):
