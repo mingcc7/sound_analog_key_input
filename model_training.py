@@ -1,11 +1,15 @@
 import numpy as np
-import pandas as pd
 import librosa
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import InputLayer, Conv2D, MaxPooling2D, Flatten, Dense
-from tensorflow.keras.utils import to_categorical
+from keras.api.models import Sequential
+from keras.api.layers import InputLayer, Conv2D, MaxPooling2D, Flatten, Dense
+from keras.api.utils import to_categorical
+import queue
+from keras.api.callbacks import Callback, ProgbarLogger
+
+
+model_training_queue = queue.Queue()
 
 # 数据预处理
 def extract_features(file_path):
@@ -31,7 +35,7 @@ def load_data(audio_dirs,audio_path):
     labels = np.array(labels)
     return features, labels
 
-def model_training(audio_dirs,configuration_path):
+def model_training(audio_dirs,configuration_path,stop_flag):
     X, y = load_data(audio_dirs,configuration_path + "/audio")
 
     # 编码标签
@@ -55,12 +59,25 @@ def model_training(audio_dirs,configuration_path):
     model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
     # 训练模型
-    model.fit(X_train.reshape(-1, 40, 1, 1), y_train, epochs=10, batch_size=32)
+    class CustomCallback(Callback):
+        def on_epoch_end(self, epoch, logs=None):
+            model_training_queue.put({"epoch":f"{epoch+1}/10"})
+            # model_training_queue.put({"loss":f"{logs['loss']:.4f}"})
+            # model_training_queue.put({"accuracy":f"{logs['accuracy']:.4f}"})
+    custom_callback = CustomCallback()
+    model_training_queue.put({"type":"fit"})
+    model_training_queue.put({"epoch":"0/10"})
+    model.fit(X_train.reshape(-1, 40, 1, 1), y_train, epochs=10, batch_size=32, callbacks=[custom_callback, ProgbarLogger()])
 
     # 评估模型
+    model_training_queue.put({"type":"evaluate"})
     loss, accuracy = model.evaluate(X_test.reshape(-1, 40, 1, 1), y_test)
+    # model_training_queue.put({"loss":f"{loss:.4f}"})
+    model_training_queue.put({"accuracy":f"{accuracy:.4f}"})
     print(f"Test accuracy: {accuracy}")
 
     # 保存整个模型
     model.save(configuration_path+'/model.keras')
     np.save(configuration_path+'/classes.npy', encoder.classes_)
+
+    stop_flag.set()

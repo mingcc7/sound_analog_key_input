@@ -5,6 +5,11 @@
      "verify":"Verify",
      "delete":"Delete",
      "play":"Play",
+     "status":"Status",
+     "fit":"Training in progress",
+     "evaluate":"Be evaluating",
+     "schedule":"Schedule",
+     "accuracy":"Accuracy",
      "want_to_continue":"Are you sure you want to continue?",
      "configuration_add":"Add configuration",
      "configuration_update":"Update configuration",
@@ -18,9 +23,18 @@
      "audio_name_already_exists":"The audio name already exists!",
      "audio_name_cannot_be_empty":"The audio name cannot be empty!",
      "audio_now_cannot_be_empty":"The current audio cannot be empty!",
-     "audio_acquisition":"Audio acquisition",
-     "audio_acquisition_stop":"Audio acquisition stop",
+     "audio_acquisition":"Audio acquisition(Audio monitoring)",
+     "audio_acquisition_stop":"Audio monitoring stop",
      "audio_acquisition_listening":"Audio acquisition listening!",
+     "audio_file_cannot_be_empty":"The audio file cannot be empty!",
      "model_training":"Model training",
-     "audio_file_cannot_be_empty":"The audio file cannot be empty!"
+     "model_training_in_progress":"Model training in progress!",
+     "model_test":"Model test(Audio monitoring)",
+     "model_test_in_progress":"Model test in progress!",
+     "bind_key":"Bind key",
+     "bind_key_in_progress":"Bind key in progress!",
+     "start_running":"Start running(Audio monitoring)",
+     "model_not_exist":"Model does not exist!",
+     "is_running":"Is running!"
+     
 }

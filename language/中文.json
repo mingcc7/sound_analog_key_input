@@ -5,6 +5,11 @@
     "verify":"确认",
     "delete":"删除",
     "play":"播放",
+    "status":"状态",
+    "fit":"训练中",
+    "evaluate":"评估中",
+    "schedule":"进度",
+    "accuracy":"准确度",
     "want_to_continue":"你确定要继续吗？",
     "configuration_add":"添加配置",
     "configuration_update":"修改配置",
@@ -18,9 +23,18 @@
     "audio_name_already_exists":"声音名称已存在！",
     "audio_name_cannot_be_empty":"声音名称不可为空！",
     "audio_now_cannot_be_empty":"当前声音不可为空！",
-    "audio_acquisition":"声音采集",
-    "audio_acquisition_stop":"声音采集停止",
+    "audio_acquisition":"声音采集（声音监听）",
+    "audio_acquisition_stop":"声音监听停止",
     "audio_acquisition_listening":"声音采集中！",
+    "audio_file_cannot_be_empty":"声音文件不可为空！",
     "model_training":"模型训练",
-    "audio_file_cannot_be_empty":"声音文件不可为空！"
+    "model_training_in_progress":"模型训练中！",
+    "model_test":"模型测试（声音监听）",
+    "model_test_in_progress":"模型测试中！",
+    "bind_key":"绑定按键",
+    "bind_key_in_progress":"绑定按键运行中！",
+    "start_running":"开始运行（声音监听）",
+    "model_not_exist":"模型不存在！",
+    "is_running":"正在运行！"
+    
 }

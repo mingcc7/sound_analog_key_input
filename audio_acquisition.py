@@ -1,12 +1,9 @@
 import pyaudio
 import numpy as np
-import librosa
-from tensorflow.keras.models import load_model
+from keras.api.models import load_model
 from sklearn.preprocessing import LabelEncoder
 import wave
-from pydub import AudioSegment
 import os
-import threading
 import queue
 
 from model_training import extract_features
@@ -85,7 +82,6 @@ def audio_acquisition(use_model,save_path,stop_flag,save_flag):
                     predicted_label = encoder.inverse_transform([predicted_class])
                     print(f"Predicted sound type: {predicted_label[0]}")
                     acquisition_audio_name_queue.put(predicted_label[0])
-                    save_flag.set()
                 else:
                     audio_dirs = os.listdir(save_path)
                     for item in audio_dirs:

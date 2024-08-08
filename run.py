@@ -8,16 +8,19 @@ import threading
 from natsort import natsorted
 from playsound import playsound
 import time
+from datetime import datetime
+import queue
 
 
 from audio_acquisition import audio_acquisition
 from audio_acquisition import acquisition_audio_name_queue
 from model_training import model_training
+from model_training import model_training_queue
 
-# 窗口大小改变
-def window_on_resize(event):
-    configuration_json["window_width"] = event.width
-    configuration_json["window_height"] = event.height
+from key_controls import key_listener
+from key_controls import bind_key_thread_stop_flag
+from key_controls import key_queue
+from key_controls import key_controller
 
 # 窗口居中
 def center_window(window, width, height):
@@ -37,6 +40,9 @@ def delete_window():
     answer = messagebox.askquestion(text_json["verify"], text_json["want_to_continue"])
     if answer == 'yes':
         audio_acquisition_thread_stop_flag.set()
+        model_test_thread_stop_flag.set()
+        configuration_json["window_width"] = window.winfo_width()
+        configuration_json["window_height"] = window.winfo_height()
         with open("configuration.json", 'w', encoding='utf-8') as file:
             json.dump(configuration_json, file, ensure_ascii=False, indent=4)
         window.destroy()
@@ -60,22 +66,38 @@ def on_language_combobox_change(*args):
     audio_acquisition_button['text'] = text_json["audio_acquisition"]
     audio_acquisition_stop_button['text'] = text_json["audio_acquisition_stop"]
     model_training_button['text'] = text_json["model_training"]
+    model_test_button['text'] = text_json["model_test"]
+    bind_key_button['text'] = text_json["bind_key"]
+    start_running_button['text'] = text_json["start_running"]
 
     audio_file_pack()
+    model_training_Lable["text"] = ""
 
 # 配置选择
 def on_configuration_combobox_change(*args):
-    # 停止声音采集
-    on_audio_acquisition_stop_button_click()
+    if not start_running_thread_stop_flag.is_set():
+        configuration_combo.set(configuration_json["now_configuration"])
+        messagebox.showinfo(text_json["tips"], text_json["is_running"])
+    elif not model_test_thread_stop_flag.is_set():
+        configuration_combo.set(configuration_json["now_configuration"])
+        messagebox.showinfo(text_json["tips"], text_json["model_test_in_progress"])
+    elif not model_training_thread_stop_flag.is_set():
+        configuration_combo.set(configuration_json["now_configuration"])
+        messagebox.showinfo(text_json["tips"], text_json["model_training_in_progress"])
+    else:
+        # 停止声音采集
+        on_audio_acquisition_stop_button_click()
 
-    selected_value = configuration_combo_var.get()
-    configuration_json["now_configuration"] = selected_value
-    configuration_name_entry.delete(0, tk.END)
-    configuration_name_entry.insert(0, configuration_json["now_configuration"])
+        selected_value = configuration_combo_var.get()
+        configuration_json["now_configuration"] = selected_value
+        configuration_name_entry.delete(0, tk.END)
+        configuration_name_entry.insert(0, configuration_json["now_configuration"])
 
-    # 更新声音选择
-    audio_name_entry.delete(0, tk.END)
-    update_audio_combobox()
+        # 更新声音选择
+        audio_name_entry.delete(0, tk.END)
+        update_audio_combobox()
+
+        model_training_Lable["text"] = ""
 
 # 更新配置选择
 def update_configuration_combobox(configuration_name):
@@ -86,7 +108,13 @@ def update_configuration_combobox(configuration_name):
 # 添加配置
 def on_configuration_add_button_click():
     configuration_name = configuration_name_entry.get()
-    if not os.path.exists("configuration/"+configuration_name) and configuration_name != "":
+    if not start_running_thread_stop_flag.is_set():
+        messagebox.showinfo(text_json["tips"], text_json["is_running"])
+    elif not model_test_thread_stop_flag.is_set():
+        messagebox.showinfo(text_json["tips"], text_json["model_test_in_progress"])
+    elif not model_training_thread_stop_flag.is_set():
+        messagebox.showinfo(text_json["tips"], text_json["model_training_in_progress"])
+    elif not os.path.exists("configuration/"+configuration_name) and configuration_name != "":
         answer = messagebox.askquestion(text_json["verify"], text_json["want_to_continue"])
         if answer == 'yes':
             if not os.path.exists("configuration"):
@@ -112,8 +140,14 @@ def on_configuration_add_button_click():
 # 修改配置
 def on_configuration_update_button_click():
     configuration_name = configuration_name_entry.get()
+    if not start_running_thread_stop_flag.is_set():
+        messagebox.showinfo(text_json["tips"], text_json["is_running"])
+    elif not model_test_thread_stop_flag.is_set():
+        messagebox.showinfo(text_json["tips"], text_json["model_test_in_progress"])
+    elif not model_training_thread_stop_flag.is_set():
+        messagebox.showinfo(text_json["tips"], text_json["model_training_in_progress"])
     # 配置名称没改变
-    if configuration_combo_var.get() == configuration_name and configuration_name != "" and configuration_combo["values"] != "":
+    elif configuration_combo_var.get() == configuration_name and configuration_name != "" and configuration_combo["values"] != "":
         messagebox.showinfo(text_json["tips"], text_json["success"])
     # 配置名称改变
     elif not os.path.exists("configuration/"+configuration_name) and configuration_name != "" and configuration_combo["values"] != "":
@@ -134,7 +168,13 @@ def on_configuration_update_button_click():
 
 # 删除配置
 def on_configuration_delete_button_click():
-    if configuration_combo_var.get() == "":
+    if not start_running_thread_stop_flag.is_set():
+        messagebox.showinfo(text_json["tips"], text_json["is_running"])
+    elif not model_test_thread_stop_flag.is_set():
+        messagebox.showinfo(text_json["tips"], text_json["model_test_in_progress"])
+    elif not model_training_thread_stop_flag.is_set():
+        messagebox.showinfo(text_json["tips"], text_json["model_training_in_progress"])
+    elif configuration_combo_var.get() == "":
         messagebox.showinfo(text_json["tips"], text_json["configuration_now_cannot_be_empty"])
     else:
         answer = messagebox.askquestion(text_json["verify"], text_json["want_to_continue"])
@@ -156,6 +196,11 @@ def on_audio_combobox_change(*args):
     audio_name_entry.delete(0, tk.END)
     audio_name_entry.insert(0, selected_value)
     audio_file_pack()
+
+    if audio_combo_var.get() in configuration_json["configuration_audio_key"] and configuration_json["now_configuration"] in configuration_json["configuration_audio_key"][audio_combo_var.get()]:
+        bind_key_Lable["text"] = configuration_json["configuration_audio_key"][configuration_json["now_configuration"]][audio_combo_var.get()]
+    else:
+        bind_key_Lable["text"] = ""
     
 
 # 声音文件
@@ -188,10 +233,13 @@ def audio_file_pack(update = False):
 
 # 删除声音文件
 def on_audio_file_delete_button_click(file_path):
-    answer = messagebox.askquestion(text_json["verify"], text_json["want_to_continue"])
-    if answer == 'yes':
-        os.remove(file_path)
-        audio_file_pack()
+    if not model_training_thread_stop_flag.is_set():
+        messagebox.showinfo(text_json["tips"], text_json["model_training_in_progress"])
+    else:
+        answer = messagebox.askquestion(text_json["verify"], text_json["want_to_continue"])
+        if answer == 'yes':
+            os.remove(file_path)
+            audio_file_pack()
 
 # 更新声音选择
 def update_audio_combobox():
@@ -204,7 +252,9 @@ def update_audio_combobox():
 # 添加声音
 def on_audio_add_button_click():
     audio_name = audio_name_entry.get()
-    if configuration_combo_var.get() == "":
+    if not model_training_thread_stop_flag.is_set():
+        messagebox.showinfo(text_json["tips"], text_json["model_training_in_progress"])
+    elif configuration_combo_var.get() == "":
         messagebox.showinfo(text_json["tips"], text_json["configuration_now_cannot_be_empty"])
     elif not os.path.exists(f"configuration/{configuration_combo_var.get()}/audio/{audio_name}") and audio_name != "":
         answer = messagebox.askquestion(text_json["verify"], text_json["want_to_continue"])
@@ -226,7 +276,9 @@ def on_audio_add_button_click():
 # 修改声音
 def on_audio_update_button_click():
     audio_name = audio_name_entry.get()
-    if configuration_combo_var.get() == "":
+    if not model_training_thread_stop_flag.is_set():
+        messagebox.showinfo(text_json["tips"], text_json["model_training_in_progress"])
+    elif configuration_combo_var.get() == "":
         messagebox.showinfo(text_json["tips"], text_json["configuration_now_cannot_be_empty"])
     # 声音名称没改变
     elif audio_combo_var.get() == audio_name and audio_name != "" and audio_combo["values"] != "":
@@ -250,7 +302,9 @@ def on_audio_update_button_click():
 
 # 删除声音
 def on_audio_delete_button_click():
-    if audio_combo_var.get() == "":
+    if not model_training_thread_stop_flag.is_set():
+        messagebox.showinfo(text_json["tips"], text_json["model_training_in_progress"])
+    elif audio_combo_var.get() == "":
         messagebox.showinfo(text_json["tips"], text_json["audio_now_cannot_be_empty"])
     else:
         answer = messagebox.askquestion(text_json["verify"], text_json["want_to_continue"])
@@ -268,7 +322,13 @@ audio_acquisition_thread_stop_flag = threading.Event()
 audio_acquisition_thread_stop_flag.set()
 audio_acquisition_thread_save_flag = threading.Event()
 def on_audio_acquisition_button_click():
-    if audio_combo_var.get() == "":
+    if not start_running_thread_stop_flag.is_set():
+        messagebox.showinfo(text_json["tips"], text_json["is_running"])
+    elif not model_test_thread_stop_flag.is_set():
+        messagebox.showinfo(text_json["tips"], text_json["model_test_in_progress"])
+    elif not model_training_thread_stop_flag.is_set():
+        messagebox.showinfo(text_json["tips"], text_json["model_training_in_progress"])
+    elif audio_combo_var.get() == "":
         messagebox.showinfo(text_json["tips"], text_json["audio_now_cannot_be_empty"])
     elif audio_acquisition_thread_stop_flag.is_set():
         audio_acquisition_thread_stop_flag.clear()
@@ -282,6 +342,7 @@ def on_audio_acquisition_button_click():
                 if audio_acquisition_thread_save_flag.is_set():
                     audio_acquisition_thread_save_flag.clear()
                     audio_file_pack(update = True)
+                time.sleep(0.001)
         save_flag_thread = threading.Thread(target=save_flag)
         save_flag_thread.start()
     else:
@@ -291,40 +352,157 @@ def on_audio_acquisition_button_click():
 def on_audio_acquisition_stop_button_click():
     audio_acquisition_thread_stop_flag.set()
     audio_acquisition_button.config(bg='SystemButtonFace')
+    model_test_thread_stop_flag.set()
     model_test_button.config(bg='SystemButtonFace')
+    start_running_thread_stop_flag.set()
+    start_running_button.config(bg='SystemButtonFace')
 
 # 模型训练
+model_training_thread_stop_flag = threading.Event()
+model_training_thread_stop_flag.set()
 def on_model_training_button_click():
-    audio_dirs = os.listdir(f"configuration/{configuration_combo_var.get()}/audio")
-    audio_json = {}
-    count = 0
-    for item in audio_dirs:
-        audio_json[item] = {}
-        audio_file_dirs = os.listdir(f"configuration/{configuration_combo_var.get()}/audio/{item}")
-        for file_item in audio_file_dirs:
-            audio_json[item][file_item] = {}
-            count += 1
-    if count == 0:
-        messagebox.showinfo(text_json["tips"], text_json["audio_file_cannot_be_empty"])
+    if not start_running_thread_stop_flag.is_set():
+        messagebox.showinfo(text_json["tips"], text_json["is_running"])
+    elif not model_test_thread_stop_flag.is_set():
+        messagebox.showinfo(text_json["tips"], text_json["model_test_in_progress"])
+    elif configuration_combo_var.get() == "":
+        messagebox.showinfo(text_json["tips"], text_json["configuration_now_cannot_be_empty"])
+    elif not model_training_thread_stop_flag.is_set():
+        messagebox.showinfo(text_json["tips"], text_json["model_training_in_progress"])
     else:
-        model_training(audio_json,f"configuration/{configuration_combo_var.get()}")
+        audio_dirs = os.listdir(f"configuration/{configuration_combo_var.get()}/audio")
+        audio_json = {}
+        count = 0
+        for item in audio_dirs:
+            audio_json[item] = {}
+            audio_file_dirs = os.listdir(f"configuration/{configuration_combo_var.get()}/audio/{item}")
+            for file_item in audio_file_dirs:
+                audio_json[item][file_item] = {}
+                count += 1
+        if count == 0:
+            messagebox.showinfo(text_json["tips"], text_json["audio_file_cannot_be_empty"])
+        else:
+            model_training_thread_stop_flag.clear()
+            model_training_thread = threading.Thread(target=model_training, args=(audio_json,f"configuration/{configuration_combo_var.get()}",model_training_thread_stop_flag))
+            model_training_thread.start()
+            model_training_button.config(bg='skyblue')
+
+            def queue_get():
+                while not model_training_thread_stop_flag.is_set():
+                    if not model_training_queue.empty():
+                        queue_get = model_training_queue.get(timeout=1)
+                        key = list(queue_get.keys())[0]
+                        values = list(queue_get.values())[0]
+                        if key == "type":
+                            model_training_Lable["text"] = f"{text_json['status']}:{text_json[values]}"
+                        elif key == "epoch":
+                            model_training_Lable["text"] = f"{text_json['schedule']}:{values}"
+                        elif key == "accuracy":
+                            model_training_Lable["text"] = f"{text_json['accuracy']}:{values}"
+                        # elif key == "loss":
+                            # model_training_Lable["text"] = f"{key}:{values}"
+                    time.sleep(0.001)
+                model_training_button.config(bg='SystemButtonFace')
+            save_flag_thread = threading.Thread(target=queue_get)
+            save_flag_thread.start()
 
 # 模型测试
+model_test_thread_stop_flag = threading.Event()
+model_test_thread_stop_flag.set()
 def on_model_test_button_click():
-    audio_acquisition_thread_stop_flag.clear()
-    audio_acquisition_thread_save_flag.clear()
-    audio_acquisition_thread = threading.Thread(target=audio_acquisition, args=(True,f"configuration/{configuration_combo_var.get()}",audio_acquisition_thread_stop_flag,audio_acquisition_thread_save_flag))
-    audio_acquisition_thread.start()
-    model_test_button.config(bg='red')
+    if not start_running_thread_stop_flag.is_set():
+        messagebox.showinfo(text_json["tips"], text_json["is_running"])
+    elif not model_test_thread_stop_flag.is_set():
+        messagebox.showinfo(text_json["tips"], text_json["model_test_in_progress"])
+    elif not model_training_thread_stop_flag.is_set():
+        messagebox.showinfo(text_json["tips"], text_json["model_training_in_progress"])
+    elif configuration_combo_var.get() == "":
+        messagebox.showinfo(text_json["tips"], text_json["configuration_now_cannot_be_empty"])
+    elif not os.path.exists(f"configuration/{configuration_combo_var.get()}/model.keras"):
+        messagebox.showinfo(text_json["tips"], text_json["model_not_exist"])
+    else:
+        model_test_thread_stop_flag.clear()
+        audio_acquisition_thread = threading.Thread(target=audio_acquisition, args=(True,f"configuration/{configuration_combo_var.get()}",model_test_thread_stop_flag,None))
+        audio_acquisition_thread.start()
+        model_test_button.config(bg='red')
 
-    def save_flag():
-        while not audio_acquisition_thread_stop_flag.is_set():
-            if audio_acquisition_thread_save_flag.is_set():
-                audio_acquisition_thread_save_flag.clear()
-                print(acquisition_audio_name_queue.get(timeout=1))
-            time.sleep(0.001)
-    save_flag_thread = threading.Thread(target=save_flag)
-    save_flag_thread.start()
+        def get_name_queue():
+            while not model_test_thread_stop_flag.is_set():
+                if not acquisition_audio_name_queue.empty():
+                    current_time = datetime.now()
+                    formatted_time = current_time.strftime("%Y-%m-%d %H:%M:%S")
+                    model_test_Lable["text"] = f"{formatted_time}:{acquisition_audio_name_queue.get(timeout=1)}"
+                time.sleep(0.001)
+        get_name_queue_thread = threading.Thread(target=get_name_queue)
+        get_name_queue_thread.start()
+
+# 绑定按键
+bind_key_thread_stop_flag.set()
+def on_bind_key_button_click():
+    if not bind_key_thread_stop_flag.is_set():
+        messagebox.showinfo(text_json["tips"], text_json["bind_key_in_progress"])
+    elif audio_combo_var.get() == "":
+        messagebox.showinfo(text_json["tips"], text_json["audio_now_cannot_be_empty"])
+    else:
+        bind_key_thread_stop_flag.clear()
+        while not key_queue.empty():
+            try:
+                key_queue.get_nowait()
+            except queue.Empty:
+                break
+        key_listener_thread = threading.Thread(target=key_listener)
+        key_listener_thread.start()
+        bind_key_button.config(bg='red')
+
+        def queue_get():
+            while not bind_key_thread_stop_flag.is_set():
+                if not key_queue.empty():
+                    key = key_queue.get(timeout=1)
+                    bind_key_Lable["text"] = f"{key}"
+                    bind_key_thread_stop_flag.set()
+                    if configuration_json["now_configuration"] not in configuration_json["configuration_audio_key"]:
+                        configuration_json["configuration_audio_key"][configuration_json["now_configuration"]] = {}
+                    configuration_json["configuration_audio_key"][configuration_json["now_configuration"]][audio_combo_var.get()] = f"{key}"
+                    with open("configuration.json", 'w', encoding='utf-8') as file:
+                        json.dump(configuration_json, file, ensure_ascii=False, indent=4)
+
+                time.sleep(0.001)
+            bind_key_button.config(bg='SystemButtonFace')
+        queue_get_thread = threading.Thread(target=queue_get)
+        queue_get_thread.start()
+
+# 开始运行
+start_running_thread_stop_flag = threading.Event()
+start_running_thread_stop_flag.set()
+def on_start_running_button_click():
+    if not start_running_thread_stop_flag.is_set():
+        messagebox.showinfo(text_json["tips"], text_json["is_running"])
+    elif not model_test_thread_stop_flag.is_set():
+        messagebox.showinfo(text_json["tips"], text_json["model_test_in_progress"])
+    elif not model_training_thread_stop_flag.is_set():
+        messagebox.showinfo(text_json["tips"], text_json["model_training_in_progress"])
+    elif configuration_combo_var.get() == "":
+        messagebox.showinfo(text_json["tips"], text_json["configuration_now_cannot_be_empty"])
+    elif not os.path.exists(f"configuration/{configuration_combo_var.get()}/model.keras"):
+        messagebox.showinfo(text_json["tips"], text_json["model_not_exist"])
+    else:
+        start_running_thread_stop_flag.clear()
+        start_running_thread = threading.Thread(target=audio_acquisition, args=(True,f"configuration/{configuration_combo_var.get()}",start_running_thread_stop_flag,None))
+        start_running_thread.start()
+        start_running_button.config(bg='red')
+
+        def get_name_queue():
+            while not start_running_thread_stop_flag.is_set():
+                if not acquisition_audio_name_queue.empty():
+                    audio = acquisition_audio_name_queue.get(timeout=1)
+                    current_time = datetime.now()
+                    formatted_time = current_time.strftime("%Y-%m-%d %H:%M:%S")
+                    model_test_Lable["text"] = f"{formatted_time}:{audio}"
+                    key_controller(configuration_json["configuration_audio_key"][configuration_json["now_configuration"]][audio])
+                time.sleep(0.001)
+        get_name_queue_thread = threading.Thread(target=get_name_queue)
+        get_name_queue_thread.start()
+    
 
 with open("configuration.json", 'r', encoding='utf-8') as file:
     configuration_json = json.load(file)
@@ -355,6 +533,8 @@ language_combo = ttk.Combobox(left_frame, textvariable=language_combo_var, value
 language_combo.pack(pady=1,fill=tk.BOTH)
 
 # 配置选择
+if not os.path.exists("configuration"):
+    os.mkdir("configuration")
 configuration_combo_values = os.listdir(f"configuration")
 configuration_combo_var = tk.StringVar()
 configuration_combo_var.trace_add('write', on_configuration_combobox_change)
@@ -430,7 +610,7 @@ audio_file_scrollbar_frame.pack(fill=tk.BOTH)
 audio_file_scrollbar = tk.Scrollbar(audio_file_scrollbar_frame)
 audio_file_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
-audio_file_canvas = tk.Canvas(audio_file_scrollbar_frame, yscrollcommand=audio_file_scrollbar.set,height=200)
+audio_file_canvas = tk.Canvas(audio_file_scrollbar_frame, yscrollcommand=audio_file_scrollbar.set,height=270)
 audio_file_canvas.pack()
 audio_file_scrollbar.config(command=audio_file_canvas.yview)
 
@@ -443,19 +623,46 @@ def audio_file_canvas_on_mousewheel(event):
     audio_file_canvas.yview_scroll(int(-1*(event.delta/120)), "units")
 audio_file_canvas.bind_all("<MouseWheel>", audio_file_canvas_on_mousewheel)
 
+# 模型训练容器
+model_training_frame = tk.Frame(left_frame)
+model_training_frame.pack(fill=tk.BOTH)
+
 # 模型训练
-model_training_button = tk.Button(left_frame, command=on_model_training_button_click)
-model_training_button.pack()
+model_training_button = tk.Button(model_training_frame, command=on_model_training_button_click)
+model_training_button.pack(side=tk.LEFT, padx=5, pady=1)
+
+# 模型训练结果
+model_training_Lable = tk.Label(model_training_frame)
+model_training_Lable.pack(side=tk.LEFT, padx=5, pady=1)
+
+# 模型测试容器
+model_test_frame = tk.Frame(left_frame)
+model_test_frame.pack(fill=tk.BOTH)
 
 # 模型测试
-model_test_button = tk.Button(left_frame, text="测试模型", command=on_model_test_button_click)
-model_test_button.pack()
+model_test_button = tk.Button(model_test_frame, command=on_model_test_button_click)
+model_test_button.pack(side=tk.LEFT, padx=5, pady=1)
 
-# button = tk.Button(window, text="绑定按键", command=on_button_click)
-# button.pack()
+# 模型测试结果
+model_test_Lable = tk.Label(model_test_frame)
+model_test_Lable.pack(side=tk.LEFT, padx=5, pady=1)
 
-# button = tk.Button(window, text="运行启动", command=on_button_click)
-# button.pack()
+# 按键绑定容器
+bind_key_frame = tk.Frame(left_frame)
+bind_key_frame.pack(fill=tk.BOTH)
+
+# 按键绑定
+bind_key_button = tk.Button(bind_key_frame, command=on_bind_key_button_click)
+bind_key_button.pack(side=tk.LEFT, padx=5, pady=1)
+
+# 按键绑定结果
+bind_key_Lable = tk.Label(bind_key_frame)
+bind_key_Lable.pack(side=tk.LEFT, padx=5, pady=1)
+
+# 开始运行
+start_running_button = tk.Button(left_frame, command=on_start_running_button_click)
+start_running_button.pack(fill=tk.BOTH)
+
 
 language_combo.set(configuration_json["language"])
 if configuration_json['now_configuration'] != "" and os.path.exists(f"configuration/{configuration_json['now_configuration']}"):
@@ -466,6 +673,5 @@ elif configuration_json['now_configuration'] != "":
 
 # 绑定关闭事件
 window.protocol("WM_DELETE_WINDOW", delete_window)
-window.bind("<Configure>", window_on_resize)
 
 window.mainloop()
