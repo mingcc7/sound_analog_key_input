@@ -6,5 +6,6 @@ Each voice input multiple audio (100 recommended), as a data set for model train
 
 ## Question
 
-1.An error occurs when a sound is played: The specified device is not turned on or is not recognized by the MCI.
+### An error occurs when a sound is played: The specified device is not turned on or is not recognized by the MCI.
+
 Navigate to the playsound.py file that reported the error and remove.encode('utf-16') after command = '.join(command).encode('utf-16').

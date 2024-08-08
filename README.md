@@ -6,5 +6,6 @@
 
 ## 问题
 
-1.播放声音时报错：指定的设备未打开，或不被 MCI 所识别。
+### 播放声音时报错：指定的设备未打开，或不被 MCI 所识别。
+
 导航到报错的playsound.py文件，将command = ' '.join(command).encode('utf-16')后面的.encode('utf-16')去掉。
