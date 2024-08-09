@@ -4,10 +4,6 @@
     "language": "中文",
     "now_configuration": "1",
     "configuration_audio_key": {
-        "1": {
-            "1": [
-                "Button.right"
-            ]
-        }
+        "1": {}
     }
 }

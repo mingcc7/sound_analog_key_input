@@ -68,17 +68,10 @@ def audio_acquisition(use_model,save_path,stop_flag,save_flag):
                         wf.setsampwidth(p.get_sample_size(FORMAT))
                         wf.setframerate(RATE)
                         wf.writeframes(b''.join(frames_list))
-                    mfccs = extract_features("temp.wav")
-
-                    # 准备输入数据
-                    input_data = mfccs.reshape(1, 40, 1, 1)  # 重塑为模型输入的形状
+                    features = extract_features("temp.wav")
 
                     # 使用模型进行预测
-                    predictions = model.predict(input_data)
-
-                    # 获取最高概率（最可能的类别）及其置信度
-                    max_probability = np.max(predictions[0])
-                    print(max_probability)
+                    predictions = model.predict(np.array([features]))
 
                     # 获取预测结果
                     predicted_class = np.argmax(predictions[0])
