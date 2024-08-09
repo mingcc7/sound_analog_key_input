@@ -1,16 +1,15 @@
 try:
     import tkinter as tk
     from tkinter import ttk
+    from tkinter import messagebox
     import json
     import os
-    from tkinter import messagebox
     import shutil
     import threading
     from natsort import natsorted
     from playsound import playsound
     import time
     import queue
-    from os import path
 
 
     from audio_acquisition import audio_acquisition
@@ -23,7 +22,7 @@ try:
     from key_controls import key_queue
     from key_controls import key_controller
 
-    configuration_json_path = path.abspath(path.join(path.dirname(__file__), 'configuration.json'))
+    configuration_json_path = 'configuration.json'
 
     # 窗口居中
     def center_window(window, width, height):
@@ -54,7 +53,7 @@ try:
     def on_language_combobox_change(*args):
         selected_value = language_combo_var.get()
         configuration_json["language"] = selected_value
-        with open(path.abspath(path.join(path.dirname(__file__), f"language/{configuration_json['language']}.json")), 'r', encoding='utf-8') as file:
+        with open(f"language/{configuration_json['language']}.json", 'r', encoding='utf-8') as file:
             global text_json
             text_json = json.load(file)
 

@@ -1,7 +1,5 @@
-from pynput.keyboard import Key, Listener as KeyboardListener
-from pynput.mouse import Button, Listener as MouseListener
-from pynput.keyboard import Controller as KeyboardController, Key
-from pynput.mouse import Button, Controller as MouseController
+from pynput.keyboard import Key, Listener as KeyboardListener,Controller as KeyboardController
+from pynput.mouse import Button, Listener as MouseListener,Controller as MouseController
 import queue
 import threading
 import time
@@ -35,6 +33,7 @@ def key_listener():
         if bind_key_thread_stop_flag.is_set():
             keyboard_listener.stop()
             mouse_listener.stop()
+            break
         time.sleep(0.001)
 
     # 等待所有监听器结束

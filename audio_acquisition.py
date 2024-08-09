@@ -101,8 +101,8 @@ def audio_acquisition(use_model,save_path,stop_flag,save_flag):
                 
                 frames_list = []
 
-    except KeyboardInterrupt:
-        pass
+    except KeyboardInterrupt as e:
+        print(e)
 
     finally:
         stream.stop_stream()

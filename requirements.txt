@@ -1,3 +1,5 @@
+tensorflow
+
 natsort
 playsound
 pyaudio
@@ -6,3 +8,5 @@ keras
 scikit-learn
 librosa
 pynput
+
+PyInstaller
