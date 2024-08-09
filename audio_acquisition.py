@@ -76,6 +76,10 @@ def audio_acquisition(use_model,save_path,stop_flag,save_flag):
                     # 使用模型进行预测
                     predictions = model.predict(input_data)
 
+                    # 获取最高概率（最可能的类别）及其置信度
+                    max_probability = np.max(predictions[0])
+                    print(max_probability)
+
                     # 获取预测结果
                     predicted_class = np.argmax(predictions[0])
 

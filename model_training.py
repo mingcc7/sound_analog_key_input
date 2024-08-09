@@ -1,7 +1,7 @@
 import numpy as np
 import librosa
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import LabelEncoder,StandardScaler
 from keras.api.models import Sequential
 from keras.api.layers import InputLayer, Conv2D, MaxPooling2D, Flatten, Dense
 from keras.api.utils import to_categorical
@@ -15,10 +15,23 @@ librosa.load("temp.wav")
 
 # 数据预处理
 def extract_features(file_path):
+    # 加载音频文件
     y, sr = librosa.load(file_path)
+    
+    # 计算 MFCCs
     mfccs = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=40)
-    mfccs_processed = np.mean(mfccs.T,axis=0)
-    return mfccs_processed
+    mfccs_processed = np.mean(mfccs.T, axis=0)
+    
+    # 计算其他特征
+    chroma = np.mean(librosa.feature.chroma_stft(y=y, sr=sr).T, axis=0)
+    mel = np.mean(librosa.feature.melspectrogram(y=y, sr=sr).T, axis=0)
+    contrast = np.mean(librosa.feature.spectral_contrast(y=y, sr=sr).T, axis=0)
+    tonnetz = np.mean(librosa.feature.tonnetz(y=librosa.effects.harmonic(y), sr=sr).T, axis=0)
+    
+    # 组合所有特征
+    features = np.hstack([mfccs_processed, chroma, mel, contrast, tonnetz])
+    
+    return features
 
 # 加载数据
 def load_data(audio_dirs,audio_path):
@@ -45,8 +58,12 @@ def model_training(audio_dirs,configuration_path,stop_flag):
     y = encoder.fit_transform(y)
     y = to_categorical(y)
 
+    # 特征标准化
+    scaler = StandardScaler()
+    X = scaler.fit_transform(X)
+
     # 数据集划分
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
 
     # 构建模型
     model = Sequential([
