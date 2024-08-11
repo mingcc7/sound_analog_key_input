@@ -8,7 +8,7 @@
 
 ### conda创建环境
 
-conda create -n sound_analog_key_input python=3.11
+conda create -n sound_analog_key_input python=3.8
 
 ### 激活环境
 

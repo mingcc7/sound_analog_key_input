@@ -10,12 +10,14 @@ try:
     from playsound import playsound
     import time
     import queue
+    import sys
 
     from audio_acquisition import audio_acquisition
     from audio_acquisition import acquisition_audio_name_queue
     from audio_acquisition import acquisition_audio_energy_queue
     from audio_acquisition import volume_threshold_queue
 
+    sys.stdout = open("log.log", "w")
    
     # 线程导入需要keras的模块，keras加载慢
     model_training = None

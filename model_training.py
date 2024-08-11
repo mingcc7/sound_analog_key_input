@@ -2,11 +2,11 @@ import numpy as np
 import librosa
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder,StandardScaler
-from keras.api.models import Sequential
-from keras.api.layers import InputLayer, Conv2D, MaxPooling2D, Flatten, Dense, Dropout
-from keras.api.utils import to_categorical
+from keras.models import Sequential
+from keras.layers import InputLayer, Conv2D, MaxPooling2D, Flatten, Dense, Dropout
+from keras.utils import to_categorical
 import queue
-from keras.api.callbacks import Callback, ProgbarLogger
+from keras.callbacks import Callback
 from tkinter import messagebox
 import time
 
@@ -18,7 +18,7 @@ librosa.load("temp.wav")
 # 音色特征提取函数
 def extract_features(file_path):
     y, sr = librosa.load(file_path)  # 加载音频文件
-    mfccs = librosa.feature.mfcc(y=y, sr=sr)  # 提取MFCC特征
+    mfccs = librosa.feature.mfcc(y=y, sr=sr, n_fft=512)  # 提取MFCC特征
     mfccs_processed = np.mean(mfccs.T, axis=0)  # 平均化处理
     return mfccs_processed
 
@@ -65,13 +65,11 @@ def model_training(audio_dirs,configuration_path,stop_flag):
         class CustomCallback(Callback):
             def on_epoch_end(self, epoch, logs=None):
                 model_training_queue.put({"epoch":f"{epoch+1}/100"})
-                # model_training_queue.put({"loss":f"{logs['loss']:.4f}"})
-                # model_training_queue.put({"accuracy":f"{logs['accuracy']:.4f}"})
         custom_callback = CustomCallback()
         model_training_queue.put({"type":"fit"})
         model_training_queue.put({"epoch":"0/100"})
 
-        model.fit(X_train, y_train, epochs=100, batch_size=32, validation_data=(X_test, y_test), callbacks=[custom_callback, ProgbarLogger()])
+        model.fit(X_train, y_train, epochs=100, batch_size=32, validation_data=(X_test, y_test), callbacks=[custom_callback])
 
         # 评估模型
         model_training_queue.put({"type":"evaluate"})

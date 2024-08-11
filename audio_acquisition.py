@@ -15,7 +15,7 @@ def audio_acquisition(use_model,save_path,stop_flag,save_flag):
         acquisition_audio_energy_queue.queue.clear()
 
         if use_model:
-            from keras.api.models import load_model
+            from keras.models import load_model
             from sklearn.preprocessing import LabelEncoder
             from model_training import extract_features
             # 加载模型
