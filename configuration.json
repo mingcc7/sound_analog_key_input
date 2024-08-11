@@ -2,8 +2,6 @@
     "window_width": 458,
     "window_height": 331,
     "language": "中文",
-    "now_configuration": "1",
-    "configuration_audio_key": {
-        "1": {}
-    }
+    "now_configuration": "",
+    "configuration_audio_key": {}
 }
