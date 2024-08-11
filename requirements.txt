@@ -1,12 +1,12 @@
 tensorflow
 
 natsort
-playsound
 pyaudio
 numpy
 keras
 scikit-learn
 librosa
 pynput
+pygame
 
 PyInstaller

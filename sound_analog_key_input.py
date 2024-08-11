@@ -7,10 +7,10 @@ try:
     import shutil
     import threading
     from natsort import natsorted
-    from playsound import playsound
     import time
     import queue
     import sys
+    import pygame
 
     from audio_acquisition import audio_acquisition
     from audio_acquisition import acquisition_audio_name_queue
@@ -43,7 +43,8 @@ try:
     from key_controls import key_listener
     from key_controls import bind_key_thread_stop_flag
     from key_controls import key_queue
-    from key_controls import key_controller
+    from key_controls import key_press
+    from key_controls import key_release
 
     configuration_json_path = 'configuration.json'
 
@@ -278,6 +279,18 @@ try:
             print(e)
             messagebox.showinfo("error", e)
         
+    # 播放声音文件
+    def play_audio_file(file_path):
+        try:
+            pygame.mixer.init()
+            pygame.mixer.music.load(file_path)
+            pygame.mixer.music.play()
+            while pygame.mixer.music.get_busy():
+                pygame.time.Clock().tick(10)
+            pygame.quit()
+        except Exception as e:
+            print(e)
+            messagebox.showinfo("error", e)
 
     # 声音文件
     def audio_file_pack(update = False):
@@ -299,7 +312,7 @@ try:
                     button = tk.Button(audio_file_row_frame, text=text_json["delete"], command=lambda file_path=file_path: on_audio_file_delete_button_click(file_path))
                     button.pack(side=tk.RIGHT, padx=5, pady=1)
                     # 播放声音文件
-                    button = tk.Button(audio_file_row_frame, text=text_json["play"], command=lambda file_path=file_path: playsound(file_path))
+                    button = tk.Button(audio_file_row_frame, text=text_json["play"], command=lambda file_path=file_path: play_audio_file(file_path))
                     button.pack(side=tk.RIGHT, padx=5, pady=1)
                     
             # 更新滚动区域
@@ -706,7 +719,8 @@ try:
                             if not acquisition_audio_name_queue.empty():
                                 audio = acquisition_audio_name_queue.get(timeout=1)
                                 if configuration_json["now_configuration"] in configuration_json["configuration_audio_key"] and audio in configuration_json["configuration_audio_key"][configuration_json["now_configuration"]]:
-                                    key_controller(configuration_json["configuration_audio_key"][configuration_json["now_configuration"]][audio])
+                                    key_press(configuration_json["configuration_audio_key"][configuration_json["now_configuration"]][audio])
+                                    key_release(configuration_json["configuration_audio_key"][configuration_json["now_configuration"]][audio])
                             time.sleep(0.001)
                     except Exception as e:
                         print(e)

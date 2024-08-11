@@ -45,12 +45,18 @@ keyboard = KeyboardController()
 # 创建鼠标控制器
 mouse = MouseController()
 
-def key_controller(keys):
+def key_press(keys):
     for key in keys:
         if key.startswith("Scroll."):
             mouse.scroll(0, int(key.split(".")[1]))
         elif key.startswith("Button."):
-            exec(f"mouse.click({key}, 1)")
+            exec(f"mouse.press({key})")
         else:
             exec(f"keyboard.press({key})")
+
+def key_release(keys):
+    for key in keys:
+        if key.startswith("Button."):
+            exec(f"mouse.release({key})")
+        else:
             exec(f"keyboard.release({key})")
