@@ -2,6 +2,7 @@
      "title":"Sound analog key input",
      "tips":"Tips",
      "success":"Success",
+     "fail":"Fail",
      "verify":"Verify",
      "delete":"Delete",
      "play":"Play",
@@ -28,6 +29,7 @@
      "audio_acquisition_stop":"Audio monitoring stop",
      "audio_acquisition_listening":"Audio acquisition listening!",
      "audio_file_cannot_be_empty":"The audio file cannot be empty!",
+     "audio_file_cannot_be_1":"The number of sound files cannot be 1!",
      "model_training":"Model training",
      "model_training_in_progress":"Model training in progress!",
      "model_test":"Model test(Audio monitoring)",
@@ -36,6 +38,9 @@
      "bind_key_in_progress":"Bind key in progress!",
      "start_running":"Start running(Audio monitoring)",
      "model_not_exist":"Model does not exist!",
-     "is_running":"Is running!"
+     "is_running":"Is running!",
+     "volume_threshold_set":"Volume threshold set",
+     "volume_threshold_only_be_number":"The volume threshold can only be a number!",
+     "volume_threshold_cannot_less_1":"The volume threshold cannot be less than 1!"
      
 }

@@ -8,6 +8,8 @@ sys.setrecursionlimit(sys.getrecursionlimit() * 5)
 
 PyInstaller.__main__.run([
     'sound_analog_key_input.py',
+    '--noconsole',
+    '--clean',
     '--noconfirm'
 ])
 

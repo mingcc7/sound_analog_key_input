@@ -1,7 +1,8 @@
 {
-    "window_width": 458,
-    "window_height": 331,
+    "window_width": 453,
+    "window_height": 357,
     "language": "中文",
-    "now_configuration": "",
-    "configuration_audio_key": {}
+    "now_configuration": "太鼓达人",
+    "configuration_audio_key": {},
+    "configuration_volume_threshold": {}
 }

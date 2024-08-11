@@ -7,6 +7,8 @@ from keras.api.layers import InputLayer, Conv2D, MaxPooling2D, Flatten, Dense, D
 from keras.api.utils import to_categorical
 import queue
 from keras.api.callbacks import Callback, ProgbarLogger
+from tkinter import messagebox
+import time
 
 model_training_queue = queue.Queue()
 
@@ -38,45 +40,53 @@ def load_data(audio_dirs,audio_path):
     return features, labels
 
 def model_training(audio_dirs,configuration_path,stop_flag):
-    X, y = load_data(audio_dirs,configuration_path + "/audio")
+    try:
+        X, y = load_data(audio_dirs,configuration_path + "/audio")
 
-    # 编码标签
-    encoder = LabelEncoder()
-    y = encoder.fit_transform(y)
-    y = to_categorical(y)
+        # 编码标签
+        encoder = LabelEncoder()
+        y = encoder.fit_transform(y)
+        y = to_categorical(y)
 
-    # 数据集划分
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+        # 数据集划分
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
 
-    # 创建Sequential模型
-    model = Sequential()
-    model.add(Dense(256, input_shape=(X_train.shape[1],), activation='relu'))  # 输入层
-    model.add(Dropout(0.5))
-    model.add(Dense(128, activation='relu'))  # 隐藏层
-    model.add(Dropout(0.5))
-    model.add(Dense(len(encoder.classes_), activation='softmax'))  # 输出层
+        # 创建Sequential模型
+        model = Sequential()
+        model.add(Dense(256, input_shape=(X_train.shape[1],), activation='relu'))  # 输入层
+        model.add(Dropout(0.5))
+        model.add(Dense(128, activation='relu'))  # 隐藏层
+        model.add(Dropout(0.5))
+        model.add(Dense(len(encoder.classes_), activation='softmax'))  # 输出层
 
-    # 编译模型
-    model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+        # 编译模型
+        model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-    class CustomCallback(Callback):
-        def on_epoch_end(self, epoch, logs=None):
-            model_training_queue.put({"epoch":f"{epoch+1}/100"})
-            # model_training_queue.put({"loss":f"{logs['loss']:.4f}"})
-            # model_training_queue.put({"accuracy":f"{logs['accuracy']:.4f}"})
-    custom_callback = CustomCallback()
-    model_training_queue.put({"type":"fit"})
-    model_training_queue.put({"epoch":"0/100"})
+        class CustomCallback(Callback):
+            def on_epoch_end(self, epoch, logs=None):
+                model_training_queue.put({"epoch":f"{epoch+1}/100"})
+                # model_training_queue.put({"loss":f"{logs['loss']:.4f}"})
+                # model_training_queue.put({"accuracy":f"{logs['accuracy']:.4f}"})
+        custom_callback = CustomCallback()
+        model_training_queue.put({"type":"fit"})
+        model_training_queue.put({"epoch":"0/100"})
 
-    model.fit(X_train, y_train, epochs=100, batch_size=32, validation_data=(X_test, y_test), callbacks=[custom_callback, ProgbarLogger()])
+        model.fit(X_train, y_train, epochs=100, batch_size=32, validation_data=(X_test, y_test), callbacks=[custom_callback, ProgbarLogger()])
 
-    # 评估模型
-    model_training_queue.put({"type":"evaluate"})
-    loss, accuracy = model.evaluate(X_test, y_test)
-    model_training_queue.put({"accuracy":f"{accuracy:.4f}"})
+        # 评估模型
+        model_training_queue.put({"type":"evaluate"})
+        loss, accuracy = model.evaluate(X_test, y_test)
+        model_training_queue.put({"accuracy":f"{accuracy:.4f}"})
 
-    # 保存整个模型
-    model.save(configuration_path+'/model.keras')
-    np.save(configuration_path+'/classes.npy', encoder.classes_)
+        # 保存整个模型
+        model.save(configuration_path+'/model.keras')
+        np.save(configuration_path+'/classes.npy', encoder.classes_)
 
-    stop_flag.set()
+        stop_flag.set()
+    except Exception as e:
+        print(e)
+        messagebox.showinfo("error", e)
+        model_training_queue.put({"type":"fail"})
+        time.sleep(0.001)
+        stop_flag.set()
+        

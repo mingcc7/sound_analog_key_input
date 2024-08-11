@@ -2,6 +2,7 @@
     "title":"声音模拟按键输入",
     "tips":"提示",
     "success":"成功",
+    "fail":"失败",
     "verify":"确认",
     "delete":"删除",
     "play":"播放",
@@ -28,6 +29,7 @@
     "audio_acquisition_stop":"声音监听停止",
     "audio_acquisition_listening":"声音采集中！",
     "audio_file_cannot_be_empty":"声音文件不可为空！",
+    "audio_file_cannot_be_1":"声音文件数量不可为1！",
     "model_training":"模型训练",
     "model_training_in_progress":"模型训练中！",
     "model_test":"模型测试（声音监听）",
@@ -36,6 +38,8 @@
     "bind_key_in_progress":"绑定按键运行中！",
     "start_running":"开始运行（声音监听）",
     "model_not_exist":"模型不存在！",
-    "is_running":"正在运行！"
-    
+    "is_running":"正在运行！",
+    "volume_threshold_set":"音量阈值设置",
+    "volume_threshold_only_be_number":"音量阈值只能为数字！",
+    "volume_threshold_cannot_less_1":"音量阈值不可小于1！"
 }

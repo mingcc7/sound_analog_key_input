@@ -11,27 +11,26 @@ try:
     import time
     import queue
 
+    from audio_acquisition import audio_acquisition
+    from audio_acquisition import acquisition_audio_name_queue
+    from audio_acquisition import acquisition_audio_energy_queue
+    from audio_acquisition import volume_threshold_queue
+
    
     # 线程导入需要keras的模块，keras加载慢
-    audio_acquisition = None
-    acquisition_audio_name_queue = None
     model_training = None
     model_training_queue = None
-    import_audio_model_success = False
+    import_model_success = False
     def import_audio_model():
         try:
-            print("import audio model loading")
-            global audio_acquisition
-            from audio_acquisition import audio_acquisition
-            global acquisition_audio_name_queue
-            from audio_acquisition import acquisition_audio_name_queue
+            print("import model loading")
             global model_training
             from model_training import model_training
             global model_training_queue
             from model_training import model_training_queue
-            global import_audio_model_success
-            import_audio_model_success = True
-            print("import audio model success")
+            global import_model_success
+            import_model_success = True
+            print("import model success")
         except Exception as e:
             print(e)
             messagebox.showinfo("error", e)
@@ -102,6 +101,7 @@ try:
             model_test_button['text'] = text_json["model_test"]
             bind_key_button['text'] = text_json["bind_key"]
             start_running_button['text'] = text_json["start_running"]
+            volume_threshold_set_button['text'] = text_json["volume_threshold_set"]
 
             audio_file_pack()
             model_training_Lable["text"] = ""
@@ -129,6 +129,9 @@ try:
                 configuration_json["now_configuration"] = selected_value
                 configuration_name_entry.delete(0, tk.END)
                 configuration_name_entry.insert(0, configuration_json["now_configuration"])
+                volume_threshold_entry.delete(0, tk.END)
+                if selected_value in configuration_json["configuration_volume_threshold"]:
+                    volume_threshold_entry.insert(0, configuration_json["configuration_volume_threshold"][selected_value])
 
                 # 更新声音选择
                 audio_name_entry.delete(0, tk.END)
@@ -430,9 +433,7 @@ try:
     audio_acquisition_thread_save_flag = threading.Event()
     def on_audio_acquisition_button_click():
         try:
-            if not import_audio_model_success:
-                messagebox.showinfo(text_json["tips"], text_json["loading"])
-            elif not start_running_thread_stop_flag.is_set():
+            if not start_running_thread_stop_flag.is_set():
                 messagebox.showinfo(text_json["tips"], text_json["is_running"])
             elif not model_test_thread_stop_flag.is_set():
                 messagebox.showinfo(text_json["tips"], text_json["model_test_in_progress"])
@@ -443,6 +444,10 @@ try:
             elif audio_acquisition_thread_stop_flag.is_set():
                 audio_acquisition_thread_stop_flag.clear()
                 audio_acquisition_thread_save_flag.clear()
+                volume_threshold = 0.01
+                if configuration_json["now_configuration"] in configuration_json["configuration_volume_threshold"]:
+                    volume_threshold = configuration_json["configuration_volume_threshold"][configuration_json["now_configuration"]]/100
+                volume_threshold_queue.put(volume_threshold)
                 audio_acquisition_thread = threading.Thread(target=audio_acquisition, args=(False,f"configuration/{configuration_combo_var.get()}/audio/{audio_combo_var.get()}",audio_acquisition_thread_stop_flag,audio_acquisition_thread_save_flag))
                 audio_acquisition_thread.start()
                 audio_acquisition_button.config(bg='red')
@@ -460,7 +465,7 @@ try:
                 save_flag_thread = threading.Thread(target=save_flag)
                 save_flag_thread.start()
             else:
-                messagebox.showinfo(text_json["tips"], text_json["audio_acquisition_listening"])
+                on_audio_acquisition_stop_button_click()
         except Exception as e:
             print(e)
             messagebox.showinfo("error", e)
@@ -483,7 +488,7 @@ try:
     model_training_thread_stop_flag.set()
     def on_model_training_button_click():
         try:
-            if not import_audio_model_success:
+            if not import_model_success:
                 messagebox.showinfo(text_json["tips"], text_json["loading"])
             elif not start_running_thread_stop_flag.is_set():
                 messagebox.showinfo(text_json["tips"], text_json["is_running"])
@@ -505,6 +510,8 @@ try:
                         count += 1
                 if count == 0:
                     messagebox.showinfo(text_json["tips"], text_json["audio_file_cannot_be_empty"])
+                elif count == 1:
+                    messagebox.showinfo(text_json["tips"], text_json["audio_file_cannot_be_1"])
                 else:
                     model_training_thread_stop_flag.clear()
                     model_training_thread = threading.Thread(target=model_training, args=(audio_json,f"configuration/{configuration_combo_var.get()}",model_training_thread_stop_flag))
@@ -539,25 +546,54 @@ try:
             print(e)
             messagebox.showinfo("error", e)
 
+    # 音量阈值设置
+    def on_volume_threshold_set_button_click():
+        try:
+            if configuration_combo_var.get() == "":
+                messagebox.showinfo(text_json["tips"], text_json["configuration_now_cannot_be_empty"])
+            else:
+                try:
+                    volume_threshold = float(volume_threshold_entry.get())
+                    if volume_threshold < 1:
+                        messagebox.showinfo(text_json["tips"], text_json["volume_threshold_cannot_less_1"])
+                    else:
+                        configuration_json["configuration_volume_threshold"][configuration_json["now_configuration"]] = volume_threshold
+                        with open(configuration_json_path, 'w', encoding='utf-8') as file:
+                            json.dump(configuration_json, file, ensure_ascii=False, indent=4)
+                        volume_threshold_queue.put(volume_threshold/100)
+                        messagebox.showinfo(text_json["tips"], text_json["success"])
+                except Exception as e:
+                    messagebox.showinfo(text_json["tips"], text_json["volume_threshold_only_be_number"])
+                
+        except Exception as e:
+            print(e)
+            messagebox.showinfo("error", e)
+
     # 模型测试
     model_test_thread_stop_flag = threading.Event()
     model_test_thread_stop_flag.set()
     def on_model_test_button_click():
         try:
-            if not import_audio_model_success:
+            if not import_model_success:
                 messagebox.showinfo(text_json["tips"], text_json["loading"])
             elif not start_running_thread_stop_flag.is_set():
                 messagebox.showinfo(text_json["tips"], text_json["is_running"])
             elif not model_test_thread_stop_flag.is_set():
-                messagebox.showinfo(text_json["tips"], text_json["model_test_in_progress"])
+                on_audio_acquisition_stop_button_click()
             elif not model_training_thread_stop_flag.is_set():
                 messagebox.showinfo(text_json["tips"], text_json["model_training_in_progress"])
+            elif not audio_acquisition_thread_stop_flag.is_set():
+                messagebox.showinfo(text_json["tips"], text_json["audio_acquisition_listening"])
             elif configuration_combo_var.get() == "":
                 messagebox.showinfo(text_json["tips"], text_json["configuration_now_cannot_be_empty"])
             elif not os.path.exists(f"configuration/{configuration_combo_var.get()}/model.keras"):
                 messagebox.showinfo(text_json["tips"], text_json["model_not_exist"])
             else:
                 model_test_thread_stop_flag.clear()
+                volume_threshold = 0.01
+                if configuration_json["now_configuration"] in configuration_json["configuration_volume_threshold"]:
+                    volume_threshold = configuration_json["configuration_volume_threshold"][configuration_json["now_configuration"]]/100
+                volume_threshold_queue.put(volume_threshold)
                 audio_acquisition_thread = threading.Thread(target=audio_acquisition, args=(True,f"configuration/{configuration_combo_var.get()}",model_test_thread_stop_flag,None))
                 audio_acquisition_thread.start()
                 model_test_button.config(bg='red')
@@ -566,6 +602,11 @@ try:
                     try:
                         index = 1
                         while not model_test_thread_stop_flag.is_set():
+                            energy = (0.0123,0.01234)
+                            if not acquisition_audio_energy_queue.empty():
+                                energy = acquisition_audio_energy_queue.get(timeout=1)
+                                energy = tuple(f"{element * 100:.2f}" for element in energy)
+                                volume_energy_Lable["text"] = f"{energy[0]}-{energy[1]}"
                             if not acquisition_audio_name_queue.empty():
                                 model_test_Lable["text"] = f"{index}:{acquisition_audio_name_queue.get(timeout=1)}"
                                 index += 1
@@ -633,20 +674,26 @@ try:
     start_running_thread_stop_flag.set()
     def on_start_running_button_click():
         try:
-            if not import_audio_model_success:
+            if not import_model_success:
                 messagebox.showinfo(text_json["tips"], text_json["loading"])
             elif not start_running_thread_stop_flag.is_set():
-                messagebox.showinfo(text_json["tips"], text_json["is_running"])
+                on_audio_acquisition_stop_button_click()
             elif not model_test_thread_stop_flag.is_set():
                 messagebox.showinfo(text_json["tips"], text_json["model_test_in_progress"])
             elif not model_training_thread_stop_flag.is_set():
                 messagebox.showinfo(text_json["tips"], text_json["model_training_in_progress"])
+            elif not audio_acquisition_thread_stop_flag.is_set():
+                messagebox.showinfo(text_json["tips"], text_json["audio_acquisition_listening"])
             elif configuration_combo_var.get() == "":
                 messagebox.showinfo(text_json["tips"], text_json["configuration_now_cannot_be_empty"])
             elif not os.path.exists(f"configuration/{configuration_combo_var.get()}/model.keras"):
                 messagebox.showinfo(text_json["tips"], text_json["model_not_exist"])
             else:
                 start_running_thread_stop_flag.clear()
+                volume_threshold = 0.01
+                if configuration_json["now_configuration"] in configuration_json["configuration_volume_threshold"]:
+                    volume_threshold = configuration_json["configuration_volume_threshold"][configuration_json["now_configuration"]]/100
+                volume_threshold_queue.put(volume_threshold)
                 start_running_thread = threading.Thread(target=audio_acquisition, args=(True,f"configuration/{configuration_combo_var.get()}",start_running_thread_stop_flag,None))
                 start_running_thread.start()
                 start_running_button.config(bg='red')
@@ -656,7 +703,8 @@ try:
                         while not start_running_thread_stop_flag.is_set():
                             if not acquisition_audio_name_queue.empty():
                                 audio = acquisition_audio_name_queue.get(timeout=1)
-                                key_controller(configuration_json["configuration_audio_key"][configuration_json["now_configuration"]][audio])
+                                if configuration_json["now_configuration"] in configuration_json["configuration_audio_key"] and audio in configuration_json["configuration_audio_key"][configuration_json["now_configuration"]]:
+                                    key_controller(configuration_json["configuration_audio_key"][configuration_json["now_configuration"]][audio])
                             time.sleep(0.001)
                     except Exception as e:
                         print(e)
@@ -802,6 +850,22 @@ try:
         # 模型训练结果
         model_training_Lable = tk.Label(model_training_frame)
         model_training_Lable.pack(side=tk.LEFT, padx=5, pady=1)
+
+        # 音量阈值容器
+        volume_threshold_frame = tk.Frame(left_frame)
+        volume_threshold_frame.pack(fill=tk.BOTH)
+
+        # 音量阈值
+        volume_threshold_entry = tk.Entry(volume_threshold_frame, width=5)
+        volume_threshold_entry.pack(side=tk.LEFT, padx=5, pady=1)
+
+        # 音量阈值设置
+        volume_threshold_set_button = tk.Button(volume_threshold_frame, command=on_volume_threshold_set_button_click)
+        volume_threshold_set_button.pack(side=tk.LEFT, padx=5, pady=1)
+
+        # 监听声音音量
+        volume_energy_Lable = tk.Label(volume_threshold_frame)
+        volume_energy_Lable.pack(side=tk.LEFT, padx=5, pady=1)
 
         # 模型测试容器
         model_test_frame = tk.Frame(left_frame)
