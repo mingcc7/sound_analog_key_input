@@ -11,6 +11,7 @@ try:
     import queue
     import sys
     import pygame
+    import traceback
 
     from audio_acquisition import audio_acquisition
     from audio_acquisition import acquisition_audio_name_queue
@@ -34,8 +35,9 @@ try:
             import_model_success = True
             print("import model success")
         except Exception as e:
-            print(e)
-            messagebox.showinfo("error", e)
+            error_info = traceback.format_exc()
+            print(error_info)
+            messagebox.showinfo("error", error_info)
     import_audio_model_thread = threading.Thread(target=import_audio_model)
     import_audio_model_thread.start()
 
@@ -62,8 +64,9 @@ try:
             # 设置窗口的位置
             window.geometry(f"{width}x{height}+{x}+{y}")
         except Exception as e:
-            print(e)
-            messagebox.showinfo("error", e)
+            error_info = traceback.format_exc()
+            print(error_info)
+            messagebox.showinfo("error", error_info)
 
     # 退出窗口
     def delete_window():
@@ -78,8 +81,9 @@ try:
                     json.dump(configuration_json, file, ensure_ascii=False, indent=4)
                 window.destroy()
         except Exception as e:
-            print(e)
-            messagebox.showinfo("error", e)
+            error_info = traceback.format_exc()
+            print(error_info)
+            messagebox.showinfo("error", error_info)
 
     # 语言选择
     def on_language_combobox_change(*args):
@@ -115,8 +119,9 @@ try:
             volume_energy_Lable["text"] = ""
             model_test_Lable["text"] = ""
         except Exception as e:
-            print(e)
-            messagebox.showinfo("error", e)
+            error_info = traceback.format_exc()
+            print(error_info)
+            messagebox.showinfo("error", error_info)
 
     # 配置选择
     def on_configuration_combobox_change(*args):
@@ -152,8 +157,9 @@ try:
                 model_test_Lable["text"] = ""
                 bind_key_Lable["text"] = ""
         except Exception as e:
-            print(e)
-            messagebox.showinfo("error", e)
+            error_info = traceback.format_exc()
+            print(error_info)
+            messagebox.showinfo("error", error_info)
 
     # 更新配置选择
     def update_configuration_combobox(configuration_name):
@@ -162,8 +168,9 @@ try:
             configuration_combo["values"] = configuration_combo_values
             configuration_combo_var.set(configuration_name)
         except Exception as e:
-            print(e)
-            messagebox.showinfo("error", e)
+            error_info = traceback.format_exc()
+            print(error_info)
+            messagebox.showinfo("error", error_info)
 
     # 添加配置
     def on_configuration_add_button_click():
@@ -202,8 +209,9 @@ try:
             else:
                 messagebox.showinfo(text_json["tips"], text_json["configuration_name_already_exists"])
         except Exception as e:
-            print(e)
-            messagebox.showinfo("error", e)
+            error_info = traceback.format_exc()
+            print(error_info)
+            messagebox.showinfo("error", error_info)
     # 修改配置
     def on_configuration_update_button_click():
         try:
@@ -240,8 +248,9 @@ try:
             else:
                 messagebox.showinfo(text_json["tips"], text_json["configuration_name_already_exists"])
         except Exception as e:
-            print(e)
-            messagebox.showinfo("error", e)
+            error_info = traceback.format_exc()
+            print(error_info)
+            messagebox.showinfo("error", error_info)
 
     # 删除配置
     def on_configuration_delete_button_click():
@@ -270,8 +279,9 @@ try:
 
                     messagebox.showinfo(text_json["tips"], text_json["success"])
         except Exception as e:
-            print(e)
-            messagebox.showinfo("error", e)
+            error_info = traceback.format_exc()
+            print(error_info)
+            messagebox.showinfo("error", error_info)
 
     # 声音选择
     def on_audio_combobox_change(*args):
@@ -289,8 +299,9 @@ try:
                 key = configuration_json["configuration"][configuration_json["now_configuration"]]["audio"][audio_combo_var.get()]["type"]
                 bind_key_type_combo.set(text_json[key])
         except Exception as e:
-            print(e)
-            messagebox.showinfo("error", e)
+            error_info = traceback.format_exc()
+            print(error_info)
+            messagebox.showinfo("error", error_info)
         
     # 播放声音文件
     def play_audio_file(file_path):
@@ -302,8 +313,9 @@ try:
                 pygame.time.Clock().tick(10)
             pygame.quit()
         except Exception as e:
-            print(e)
-            messagebox.showinfo("error", e)
+            error_info = traceback.format_exc()
+            print(error_info)
+            messagebox.showinfo("error", error_info)
 
     # 声音文件
     def audio_file_pack(update = False):
@@ -334,8 +346,9 @@ try:
                 audio_file_canvas.config(scrollregion=audio_file_canvas.bbox('all'),width=audio_file_frame.winfo_reqwidth())
                 audio_file_canvas.yview_moveto(0.0)
         except Exception as e:
-            print(e)
-            messagebox.showinfo("error", e)
+            error_info = traceback.format_exc()
+            print(error_info)
+            messagebox.showinfo("error", error_info)
 
     # 删除声音文件
     def on_audio_file_delete_button_click(file_path):
@@ -348,8 +361,9 @@ try:
                     os.remove(file_path)
                     audio_file_pack()
         except Exception as e:
-            print(e)
-            messagebox.showinfo("error", e)
+            error_info = traceback.format_exc()
+            print(error_info)
+            messagebox.showinfo("error", error_info)
 
     # 更新声音选择
     def update_audio_combobox():
@@ -360,8 +374,9 @@ try:
             audio_combo["values"] = audio_combo_values
             audio_combo_var.set(audio_name_entry.get())
         except Exception as e:
-            print(e)
-            messagebox.showinfo("error", e)
+            error_info = traceback.format_exc()
+            print(error_info)
+            messagebox.showinfo("error", error_info)
 
     # 添加声音
     def on_audio_add_button_click():
@@ -392,8 +407,9 @@ try:
             else:
                 messagebox.showinfo(text_json["tips"], text_json["audio_name_already_exists"])
         except Exception as e:
-            print(e)
-            messagebox.showinfo("error", e)
+            error_info = traceback.format_exc()
+            print(error_info)
+            messagebox.showinfo("error", error_info)
 
     # 修改声音
     def on_audio_update_button_click():
@@ -428,8 +444,9 @@ try:
             else:
                 messagebox.showinfo(text_json["tips"], text_json["audio_name_already_exists"])
         except Exception as e:
-            print(e)
-            messagebox.showinfo("error", e)
+            error_info = traceback.format_exc()
+            print(error_info)
+            messagebox.showinfo("error", error_info)
 
     # 删除声音
     def on_audio_delete_button_click():
@@ -454,8 +471,9 @@ try:
 
                     messagebox.showinfo(text_json["tips"], text_json["success"])
         except Exception as e:
-            print(e)
-            messagebox.showinfo("error", e)
+            error_info = traceback.format_exc()
+            print(error_info)
+            messagebox.showinfo("error", error_info)
 
     # 声音采集
     audio_acquisition_thread_stop_flag = threading.Event()
@@ -496,8 +514,9 @@ try:
             else:
                 on_audio_acquisition_stop_button_click()
         except Exception as e:
-            print(e)
-            messagebox.showinfo("error", e)
+            error_info = traceback.format_exc()
+            print(error_info)
+            messagebox.showinfo("error", error_info)
 
     # 声音采集停止
     def on_audio_acquisition_stop_button_click():
@@ -509,8 +528,9 @@ try:
             start_running_thread_stop_flag.set()
             start_running_button.config(bg='SystemButtonFace')
         except Exception as e:
-            print(e)
-            messagebox.showinfo("error", e)
+            error_info = traceback.format_exc()
+            print(error_info)
+            messagebox.showinfo("error", error_info)
 
     # 模型训练
     model_training_thread_stop_flag = threading.Event()
@@ -570,8 +590,9 @@ try:
                     save_flag_thread = threading.Thread(target=queue_get)
                     save_flag_thread.start()
         except Exception as e:
-            print(e)
-            messagebox.showinfo("error", e)
+            error_info = traceback.format_exc()
+            print(error_info)
+            messagebox.showinfo("error", error_info)
 
     # 音量阈值设置
     def on_volume_threshold_set_button_click():
@@ -593,8 +614,9 @@ try:
                     messagebox.showinfo(text_json["tips"], text_json["volume_threshold_only_be_number"])
                 
         except Exception as e:
-            print(e)
-            messagebox.showinfo("error", e)
+            error_info = traceback.format_exc()
+            print(error_info)
+            messagebox.showinfo("error", error_info)
 
     # 模型测试
     model_test_thread_stop_flag = threading.Event()
@@ -643,8 +665,9 @@ try:
                 get_name_queue_thread = threading.Thread(target=get_name_queue)
                 get_name_queue_thread.start()
         except Exception as e:
-            print(e)
-            messagebox.showinfo("error", e)
+            error_info = traceback.format_exc()
+            print(error_info)
+            messagebox.showinfo("error", error_info)
 
     # 绑定按键
     bind_key_thread_stop_flag.set()
@@ -691,8 +714,9 @@ try:
                 queue_get_thread = threading.Thread(target=queue_get)
                 queue_get_thread.start()
         except Exception as e:
-            print(e)
-            messagebox.showinfo("error", e)
+            error_info = traceback.format_exc()
+            print(error_info)
+            messagebox.showinfo("error", error_info)
 
     # 绑定按键类型
     def on_bind_key_type_combobox_change(*args):
@@ -712,8 +736,9 @@ try:
                     with open(configuration_json_path, 'w', encoding='utf-8') as file:
                         json.dump(configuration_json, file, ensure_ascii=False, indent=4)
         except Exception as e:
-            print(e)
-            messagebox.showinfo("error", e)
+            error_info = traceback.format_exc()
+            print(error_info)
+            messagebox.showinfo("error", error_info)
 
     # 开始运行
     start_running_thread_stop_flag = threading.Event()
@@ -768,8 +793,9 @@ try:
                 get_name_queue_thread = threading.Thread(target=get_name_queue)
                 get_name_queue_thread.start()
         except Exception as e:
-            print(e)
-            messagebox.showinfo("error", e)
+            error_info = traceback.format_exc()
+            print(error_info)
+            messagebox.showinfo("error", error_info)
         
     if __name__ == '__main__':
         with open(configuration_json_path, 'r', encoding='utf-8') as file:

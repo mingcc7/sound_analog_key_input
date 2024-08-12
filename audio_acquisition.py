@@ -4,6 +4,7 @@ import wave
 import os
 import queue
 from tkinter import messagebox
+import traceback
 
 acquisition_audio_name_queue = queue.Queue()
 acquisition_audio_energy_queue = queue.Queue()
@@ -116,8 +117,9 @@ def audio_acquisition(use_model,save_path,stop_flag,save_flag):
                 max_energy = float('-inf')
 
     except Exception as e:
-        print(e)
-        messagebox.showinfo("error", e)
+        error_info = traceback.format_exc()
+        print(error_info)
+        messagebox.showinfo("error", error_info)
 
     finally:
         stream.stop_stream()

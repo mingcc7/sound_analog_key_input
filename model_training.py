@@ -9,6 +9,7 @@ import queue
 from keras.callbacks import Callback
 from tkinter import messagebox
 import time
+import traceback
 
 model_training_queue = queue.Queue()
 
@@ -82,8 +83,9 @@ def model_training(audio_dirs,configuration_path,stop_flag):
 
         stop_flag.set()
     except Exception as e:
-        print(e)
-        messagebox.showinfo("error", e)
+        error_info = traceback.format_exc()
+        print(error_info)
+        messagebox.showinfo("error", error_info)
         model_training_queue.put({"type":"fail"})
         time.sleep(0.001)
         stop_flag.set()
