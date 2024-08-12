@@ -36,6 +36,8 @@
     "model_test_in_progress":"模型测试中！",
     "bind_key":"绑定按键",
     "bind_key_in_progress":"绑定按键运行中！",
+    "click":"单击",
+    "hold":"按住",
     "start_running":"开始运行（声音监听）",
     "model_not_exist":"模型不存在！",
     "is_running":"正在运行！",

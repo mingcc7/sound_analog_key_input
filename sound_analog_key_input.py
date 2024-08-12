@@ -105,9 +105,15 @@ try:
             bind_key_button['text'] = text_json["bind_key"]
             start_running_button['text'] = text_json["start_running"]
             volume_threshold_set_button['text'] = text_json["volume_threshold_set"]
+            bind_key_type_combo["values"] = [text_json['click'],text_json['hold']]
+            if audio_combo_var.get() != "":
+                key = configuration_json["configuration"][configuration_json["now_configuration"]]["audio"][audio_combo_var.get()]["type"]
+                bind_key_type_combo.set(text_json[key])
 
             audio_file_pack()
             model_training_Lable["text"] = ""
+            volume_energy_Lable["text"] = ""
+            model_test_Lable["text"] = ""
         except Exception as e:
             print(e)
             messagebox.showinfo("error", e)
@@ -133,14 +139,18 @@ try:
                 configuration_name_entry.delete(0, tk.END)
                 configuration_name_entry.insert(0, configuration_json["now_configuration"])
                 volume_threshold_entry.delete(0, tk.END)
-                if selected_value in configuration_json["configuration_volume_threshold"]:
-                    volume_threshold_entry.insert(0, configuration_json["configuration_volume_threshold"][selected_value])
+
+                if selected_value != "":
+                    volume_threshold_entry.insert(0, configuration_json["configuration"][selected_value]["volume_threshold"])
 
                 # 更新声音选择
                 audio_name_entry.delete(0, tk.END)
                 update_audio_combobox()
 
                 model_training_Lable["text"] = ""
+                volume_energy_Lable["text"] = ""
+                model_test_Lable["text"] = ""
+                bind_key_Lable["text"] = ""
         except Exception as e:
             print(e)
             messagebox.showinfo("error", e)
@@ -179,6 +189,10 @@ try:
                     except FileExistsError:
                         print(f"configuration/{configuration_name}/audio already exists")
 
+                    configuration_json["configuration"][configuration_name] = {"volume_threshold": 1.0, "audio":{}}
+                    with open(configuration_json_path, 'w', encoding='utf-8') as file:
+                        json.dump(configuration_json, file, ensure_ascii=False, indent=4)
+
                     # 更新配置选择
                     update_configuration_combobox(configuration_name)
 
@@ -209,9 +223,9 @@ try:
                 if answer == 'yes':
                     os.rename(f"configuration/{configuration_combo_var.get()}", f"configuration/{configuration_name}")
 
-                    if configuration_combo_var.get() in configuration_json["configuration_audio_key"]:
-                        configuration_json["configuration_audio_key"][configuration_name] = configuration_json["configuration_audio_key"][configuration_combo_var.get()]
-                        configuration_json["configuration_audio_key"].pop(configuration_combo_var.get())
+                    if configuration_combo_var.get() in configuration_json["configuration"]:
+                        configuration_json["configuration"][configuration_name] = configuration_json["configuration"][configuration_combo_var.get()]
+                        configuration_json["configuration"].pop(configuration_combo_var.get())
                         with open(configuration_json_path, 'w', encoding='utf-8') as file:
                             json.dump(configuration_json, file, ensure_ascii=False, indent=4)
 
@@ -245,10 +259,9 @@ try:
                 if answer == 'yes':
                     shutil.rmtree(f"configuration/{configuration_combo_var.get()}")
 
-                    if configuration_combo_var.get() in configuration_json["configuration_audio_key"]:
-                        configuration_json["configuration_audio_key"].pop(configuration_combo_var.get())
-                        with open(configuration_json_path, 'w', encoding='utf-8') as file:
-                            json.dump(configuration_json, file, ensure_ascii=False, indent=4)
+                    configuration_json["configuration"].pop(configuration_combo_var.get())
+                    with open(configuration_json_path, 'w', encoding='utf-8') as file:
+                        json.dump(configuration_json, file, ensure_ascii=False, indent=4)
 
                     configuration_combo_var.set("")
 
@@ -271,10 +284,10 @@ try:
             audio_name_entry.insert(0, selected_value)
             audio_file_pack()
 
-            if configuration_json["now_configuration"] in configuration_json["configuration_audio_key"] and audio_combo_var.get() in configuration_json["configuration_audio_key"][configuration_json["now_configuration"]]:
-                bind_key_Lable["text"] = configuration_json["configuration_audio_key"][configuration_json["now_configuration"]][audio_combo_var.get()]
-            else:
-                bind_key_Lable["text"] = ""
+            if audio_combo_var.get() != "":
+                bind_key_Lable["text"] = configuration_json["configuration"][configuration_json["now_configuration"]]["audio"][audio_combo_var.get()]["key"]
+                key = configuration_json["configuration"][configuration_json["now_configuration"]]["audio"][audio_combo_var.get()]["type"]
+                bind_key_type_combo.set(text_json[key])
         except Exception as e:
             print(e)
             messagebox.showinfo("error", e)
@@ -366,6 +379,10 @@ try:
                     except FileExistsError:
                         print(f"configuration/{configuration_combo_var.get()}/audio/{audio_name} already exists")
 
+                    configuration_json["configuration"][configuration_json["now_configuration"]]["audio"][audio_name] = {"type": "click", "key":[]}
+                    with open(configuration_json_path, 'w', encoding='utf-8') as file:
+                        json.dump(configuration_json, file, ensure_ascii=False, indent=4)
+
                     # 更新声音选择
                     update_audio_combobox()
 
@@ -395,11 +412,10 @@ try:
                 if answer == 'yes':
                     os.rename(f"configuration/{configuration_combo_var.get()}/audio/{audio_combo_var.get()}", f"configuration/{configuration_combo_var.get()}/audio/{audio_name}")
                     
-                    if configuration_combo_var.get() in configuration_json["configuration_audio_key"] and audio_combo_var.get() in configuration_json["configuration_audio_key"][configuration_combo_var.get()]:
-                        configuration_json["configuration_audio_key"][configuration_combo_var.get()][audio_name] = configuration_json["configuration_audio_key"][configuration_combo_var.get()][audio_combo_var.get()]
-                        configuration_json["configuration_audio_key"][configuration_combo_var.get()].pop(audio_combo_var.get())
-                        with open(configuration_json_path, 'w', encoding='utf-8') as file:
-                            json.dump(configuration_json, file, ensure_ascii=False, indent=4)
+                    configuration_json["configuration"][configuration_combo_var.get()]["audio"][audio_name] = configuration_json["configuration"][configuration_combo_var.get()]["audio"][audio_combo_var.get()]
+                    configuration_json["configuration"][configuration_combo_var.get()]["audio"].pop(audio_combo_var.get())
+                    with open(configuration_json_path, 'w', encoding='utf-8') as file:
+                        json.dump(configuration_json, file, ensure_ascii=False, indent=4)
 
                     # 更新声音选择
                     update_audio_combobox()
@@ -427,10 +443,9 @@ try:
                 if answer == 'yes':
                     shutil.rmtree(f"configuration/{configuration_combo_var.get()}/audio/{audio_combo_var.get()}")
 
-                    if configuration_combo_var.get() in configuration_json["configuration_audio_key"] and audio_combo_var.get() in configuration_json["configuration_audio_key"][configuration_combo_var.get()]:
-                        configuration_json["configuration_audio_key"][configuration_combo_var.get()].pop(audio_combo_var.get())
-                        with open(configuration_json_path, 'w', encoding='utf-8') as file:
-                            json.dump(configuration_json, file, ensure_ascii=False, indent=4)
+                    configuration_json["configuration"][configuration_combo_var.get()]["audio"].pop(audio_combo_var.get())
+                    with open(configuration_json_path, 'w', encoding='utf-8') as file:
+                        json.dump(configuration_json, file, ensure_ascii=False, indent=4)
 
                     audio_combo_var.set("")
 
@@ -460,8 +475,7 @@ try:
                 audio_acquisition_thread_stop_flag.clear()
                 audio_acquisition_thread_save_flag.clear()
                 volume_threshold = 0.01
-                if configuration_json["now_configuration"] in configuration_json["configuration_volume_threshold"]:
-                    volume_threshold = configuration_json["configuration_volume_threshold"][configuration_json["now_configuration"]]/100
+                volume_threshold = configuration_json["configuration"][configuration_json["now_configuration"]]["volume_threshold"]/100
                 volume_threshold_queue.put(volume_threshold)
                 audio_acquisition_thread = threading.Thread(target=audio_acquisition, args=(False,f"configuration/{configuration_combo_var.get()}/audio/{audio_combo_var.get()}",audio_acquisition_thread_stop_flag,audio_acquisition_thread_save_flag))
                 audio_acquisition_thread.start()
@@ -547,8 +561,6 @@ try:
                                         model_training_Lable["text"] = f"{text_json['schedule']}:{values}"
                                     elif key == "accuracy":
                                         model_training_Lable["text"] = f"{text_json['accuracy']}:{values}"
-                                    # elif key == "loss":
-                                        # model_training_Lable["text"] = f"{key}:{values}"
                                 time.sleep(0.001)
                         
                             model_training_button.config(bg='SystemButtonFace')
@@ -572,7 +584,7 @@ try:
                     if volume_threshold < 1:
                         messagebox.showinfo(text_json["tips"], text_json["volume_threshold_cannot_less_1"])
                     else:
-                        configuration_json["configuration_volume_threshold"][configuration_json["now_configuration"]] = volume_threshold
+                        configuration_json["configuration"][configuration_json["now_configuration"]]["volume_threshold"] = volume_threshold
                         with open(configuration_json_path, 'w', encoding='utf-8') as file:
                             json.dump(configuration_json, file, ensure_ascii=False, indent=4)
                         volume_threshold_queue.put(volume_threshold/100)
@@ -606,8 +618,7 @@ try:
             else:
                 model_test_thread_stop_flag.clear()
                 volume_threshold = 0.01
-                if configuration_json["now_configuration"] in configuration_json["configuration_volume_threshold"]:
-                    volume_threshold = configuration_json["configuration_volume_threshold"][configuration_json["now_configuration"]]/100
+                volume_threshold = configuration_json["configuration"][configuration_json["now_configuration"]]["volume_threshold"]/100
                 volume_threshold_queue.put(volume_threshold)
                 audio_acquisition_thread = threading.Thread(target=audio_acquisition, args=(True,f"configuration/{configuration_combo_var.get()}",model_test_thread_stop_flag,None))
                 audio_acquisition_thread.start()
@@ -663,9 +674,8 @@ try:
                                 key = key_queue.get(timeout=1)
                                 keys.append(f"{key}")
                                 bind_key_Lable["text"] =keys
-                                if configuration_json["now_configuration"] not in configuration_json["configuration_audio_key"]:
-                                    configuration_json["configuration_audio_key"][configuration_json["now_configuration"]] = {}
-                                configuration_json["configuration_audio_key"][configuration_json["now_configuration"]][audio_combo_var.get()] = keys
+
+                                configuration_json["configuration"][configuration_json["now_configuration"]]["audio"][audio_combo_var.get()]["key"] = keys
                                 with open(configuration_json_path, 'w', encoding='utf-8') as file:
                                     json.dump(configuration_json, file, ensure_ascii=False, indent=4)
                                 time.sleep(0.1)
@@ -680,6 +690,27 @@ try:
                         messagebox.showinfo("error", e)
                 queue_get_thread = threading.Thread(target=queue_get)
                 queue_get_thread.start()
+        except Exception as e:
+            print(e)
+            messagebox.showinfo("error", e)
+
+    # 绑定按键类型
+    def on_bind_key_type_combobox_change(*args):
+        try:
+            if not bind_key_thread_stop_flag.is_set():
+                messagebox.showinfo(text_json["tips"], text_json["bind_key_in_progress"])
+            elif audio_combo_var.get() == "":
+                messagebox.showinfo(text_json["tips"], text_json["audio_now_cannot_be_empty"])
+            else:
+                index = bind_key_type_combo.current()
+                if index == 0:
+                    configuration_json["configuration"][configuration_json["now_configuration"]]["audio"][audio_combo_var.get()]["type"] = "click"
+                    with open(configuration_json_path, 'w', encoding='utf-8') as file:
+                        json.dump(configuration_json, file, ensure_ascii=False, indent=4)
+                elif index == 1:
+                    configuration_json["configuration"][configuration_json["now_configuration"]]["audio"][audio_combo_var.get()]["type"] = "hold"
+                    with open(configuration_json_path, 'w', encoding='utf-8') as file:
+                        json.dump(configuration_json, file, ensure_ascii=False, indent=4)
         except Exception as e:
             print(e)
             messagebox.showinfo("error", e)
@@ -706,8 +737,7 @@ try:
             else:
                 start_running_thread_stop_flag.clear()
                 volume_threshold = 0.01
-                if configuration_json["now_configuration"] in configuration_json["configuration_volume_threshold"]:
-                    volume_threshold = configuration_json["configuration_volume_threshold"][configuration_json["now_configuration"]]/100
+                volume_threshold = configuration_json["configuration"][configuration_json["now_configuration"]]["volume_threshold"]/100
                 volume_threshold_queue.put(volume_threshold)
                 start_running_thread = threading.Thread(target=audio_acquisition, args=(True,f"configuration/{configuration_combo_var.get()}",start_running_thread_stop_flag,None))
                 start_running_thread.start()
@@ -715,12 +745,22 @@ try:
 
                 def get_name_queue():
                     try:
+                        wait_key_release_audio = {}
                         while not start_running_thread_stop_flag.is_set():
                             if not acquisition_audio_name_queue.empty():
                                 audio = acquisition_audio_name_queue.get(timeout=1)
-                                if configuration_json["now_configuration"] in configuration_json["configuration_audio_key"] and audio in configuration_json["configuration_audio_key"][configuration_json["now_configuration"]]:
-                                    key_press(configuration_json["configuration_audio_key"][configuration_json["now_configuration"]][audio])
-                                    key_release(configuration_json["configuration_audio_key"][configuration_json["now_configuration"]][audio])
+
+                                key_press(configuration_json["configuration"][configuration_json["now_configuration"]]["audio"][audio]["key"])
+                                wait_key_release_audio[audio] = True
+                                def wait_key_release(audio):
+                                    wait_key_release_audio[audio] = False
+                                    key = configuration_json["configuration"][configuration_json["now_configuration"]]["audio"][audio]["type"]
+                                    if key == "hold":
+                                        time.sleep(0.5)
+                                    if not wait_key_release_audio[audio]:
+                                        key_release(configuration_json["configuration"][configuration_json["now_configuration"]]["audio"][audio]["key"])
+                                wait_key_release_thread = threading.Thread(target=wait_key_release,args=(audio,))
+                                wait_key_release_thread.start()
                             time.sleep(0.001)
                     except Exception as e:
                         print(e)
@@ -902,6 +942,12 @@ try:
         # 按键绑定
         bind_key_button = tk.Button(bind_key_frame, command=on_bind_key_button_click)
         bind_key_button.pack(side=tk.LEFT, padx=5, pady=1)
+
+        # 按键类型选择
+        bind_key_type_combo_var = tk.StringVar()
+        bind_key_type_combo_var.trace_add('write', on_bind_key_type_combobox_change)
+        bind_key_type_combo = ttk.Combobox(bind_key_frame, textvariable=bind_key_type_combo_var, state='readonly', width=5)
+        bind_key_type_combo.pack(side=tk.LEFT, padx=5, pady=1)
 
         # 按键绑定结果
         bind_key_Lable = tk.Label(bind_key_frame)

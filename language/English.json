@@ -36,6 +36,8 @@
      "model_test_in_progress":"Model test in progress!",
      "bind_key":"Bind key",
      "bind_key_in_progress":"Bind key in progress!",
+     "click":"Click",
+     "hold":"Hold",
      "start_running":"Start running(Audio monitoring)",
      "model_not_exist":"Model does not exist!",
      "is_running":"Is running!",

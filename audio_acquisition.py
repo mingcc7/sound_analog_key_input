@@ -51,6 +51,7 @@ def audio_acquisition(use_model,save_path,stop_flag,save_flag):
         frames_list = []
         min_energy = float('inf')
         max_energy = float('-inf')
+        audio_index = 0
         while not stop_flag.is_set():
             frames = []
 
@@ -67,11 +68,13 @@ def audio_acquisition(use_model,save_path,stop_flag,save_flag):
             if not volume_threshold_queue.empty():
                 THRESHOLD = volume_threshold_queue.get()
 
-            if energy > THRESHOLD:
+            if energy > THRESHOLD and audio_index < 3:
+                audio_index += 1
                 frames_list.extend(frames)
                 min_energy = min(min_energy,energy)
                 max_energy = max(max_energy,energy)
             elif len(frames_list) > 0:
+                audio_index = 0
                 if use_model:
                     # 保存为 .wav 文件
                     with wave.open("temp.wav", "wb") as wf:
