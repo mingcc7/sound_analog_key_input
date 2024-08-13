@@ -1,0 +1,30 @@
+name: pack_exe # 工作流程的名称
+
+on: # 什么时候触发
+  push:  # 当有代码推送时触发
+    branches: [ "master" ]  # master分支
+
+jobs: # 执行的工作
+  run_pack_exe:  # 工作标题
+    runs-on: ubuntu-latest # 在最新版本的 Ubuntu 操作系统环境下运行
+    steps: # 要执行的步骤
+      - uses: actions/checkout@v4  # 用于将github代码仓库的代码拷贝到工作目录中
+
+      - name: Set up Python  #  使用Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.10"
+
+      - name: Install requirements.txt
+        run: | # 安装依赖包
+          sudo apt-get install python3-pyaudio
+          pip install -r <(grep -v 'pyaudio' ./requirements.txt)
+
+      - name: Run pack_exe.py
+        run: python pack_exe.py # 执行py文件
+        
+      - name: Upload generated files as artifact # 上传文件为工件
+        uses: actions/upload-artifact@v4
+        with:
+          name: sound_analog_key_input
+          path: ./dist/sound_analog_key_input.zip
