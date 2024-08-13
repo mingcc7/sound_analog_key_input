@@ -109,7 +109,7 @@ try:
             bind_key_button['text'] = text_json["bind_key"]
             start_running_button['text'] = text_json["start_running"]
             volume_threshold_set_button['text'] = text_json["volume_threshold_set"]
-            bind_key_type_combo["values"] = [text_json['click'],text_json['hold']]
+            bind_key_type_combo["values"] = [text_json["click"],text_json["short_press"],text_json["hold"],text_json["release"]]
             if audio_combo_var.get() != "":
                 key = configuration_json["configuration"][configuration_json["now_configuration"]]["audio"][audio_combo_var.get()]["type"]
                 bind_key_type_combo.set(text_json[key])
@@ -774,16 +774,18 @@ try:
                         while not start_running_thread_stop_flag.is_set():
                             if not acquisition_audio_name_queue.empty():
                                 audio = acquisition_audio_name_queue.get(timeout=1)
-
-                                key_press(configuration_json["configuration"][configuration_json["now_configuration"]]["audio"][audio]["key"])
+                                key = configuration_json["configuration"][configuration_json["now_configuration"]]["audio"][audio]["type"]
+                                if key != "release":
+                                    key_press(configuration_json["configuration"][configuration_json["now_configuration"]]["audio"][audio]["key"])
                                 wait_key_release_audio[audio] = True
                                 def wait_key_release(audio):
                                     wait_key_release_audio[audio] = False
                                     key = configuration_json["configuration"][configuration_json["now_configuration"]]["audio"][audio]["type"]
-                                    if key == "hold":
+                                    if key == "short_press":
                                         time.sleep(0.5)
                                     if not wait_key_release_audio[audio]:
-                                        key_release(configuration_json["configuration"][configuration_json["now_configuration"]]["audio"][audio]["key"])
+                                        if key != "hold":    
+                                            key_release(configuration_json["configuration"][configuration_json["now_configuration"]]["audio"][audio]["key"])
                                 wait_key_release_thread = threading.Thread(target=wait_key_release,args=(audio,))
                                 wait_key_release_thread.start()
                             time.sleep(0.001)
