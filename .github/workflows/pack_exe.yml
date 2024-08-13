@@ -10,10 +10,9 @@ jobs: # 执行的工作
     steps: # 要执行的步骤
       - uses: actions/checkout@v4  # 用于将github代码仓库的代码拷贝到工作目录中
 
-      - name: Set up Python  #  使用Python
-        uses: actions/setup-python@v3
+      - uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
+          python-version: '3.8' 
 
       - name: Install requirements.txt
         run: | # 安装依赖包
