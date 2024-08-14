@@ -1690,7 +1690,7 @@ try:
         bind_key_modules_canvas = tk.Canvas(
             bind_key_modules_scrollbar_frame,
             yscrollcommand=bind_key_modules_scrollbar.set,
-            height=100,
+            height=63,
         )
         bind_key_modules_canvas.pack(fill=tk.BOTH)
         bind_key_modules_scrollbar.config(command=bind_key_modules_canvas.yview)
