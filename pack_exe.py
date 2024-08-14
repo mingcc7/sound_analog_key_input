@@ -17,5 +17,5 @@ shutil.copytree("language", "dist/sound_analog_key_input/language")
 shutil.copy("temp.wav", "dist/sound_analog_key_input/temp.wav")
 
 # 压缩
-command = ['7z/7za.exe','a','-t7z','-mx=9','-v100m','sound_analog_key_input.7z','sound_analog_key_input']
+command = ['7z/7za.exe','a','-t7z','-v100m','sound_analog_key_input.7z','sound_analog_key_input']
 subprocess.run(command,cwd="dist")
