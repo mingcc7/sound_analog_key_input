@@ -985,7 +985,8 @@ try:
             widget.destroy()
 
         if (
-            audio_combo_var.get()
+            configuration_json["now_configuration"] == ""
+            or audio_combo_var.get()
             not in configuration_json["configuration"][
                 configuration_json["now_configuration"]
             ]["audio"]

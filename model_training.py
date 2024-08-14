@@ -21,8 +21,8 @@ librosa.load("temp.wav")
 def extract_features(file_path):
     y, sr = librosa.load(file_path)  # 加载音频文件
     mfccs = librosa.feature.mfcc(y=y, sr=sr, n_fft=512)  # 提取MFCC特征
-    mfccs_processed = np.mean(mfccs.T, axis=0)  # 平均化处理
-    return mfccs_processed
+    # mfccs_processed = np.mean(mfccs.T, axis=0)  # 平均化处理
+    return mfccs.flatten()
 
 
 # 加载数据

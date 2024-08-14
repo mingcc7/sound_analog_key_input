@@ -72,12 +72,12 @@ def audio_acquisition(use_model, save_path, stop_flag, save_flag):
             if not volume_threshold_queue.empty():
                 THRESHOLD = volume_threshold_queue.get()
 
-            if energy > THRESHOLD and audio_index < 3:
+            if energy > THRESHOLD or audio_index > 0:
                 audio_index += 1
                 frames_list.extend(frames)
                 min_energy = min(min_energy, energy)
                 max_energy = max(max_energy, energy)
-            elif len(frames_list) > 0:
+            if len(frames_list) > 0 and audio_index == 5:
                 audio_index = 0
                 if use_model:
                     # 保存为 .wav 文件
