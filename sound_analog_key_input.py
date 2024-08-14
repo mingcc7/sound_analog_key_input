@@ -184,6 +184,8 @@ try:
                 audio_name_entry.delete(0, tk.END)
                 update_audio_combobox()
 
+                bind_key_modules_load()
+
                 model_training_Lable["text"] = ""
                 volume_energy_Lable["text"] = ""
                 model_test_Lable["text"] = ""
@@ -532,7 +534,14 @@ try:
 
                     configuration_json["configuration"][
                         configuration_json["now_configuration"]
-                    ]["audio"][audio_name] = {"type": "click", "key": []}
+                    ]["audio"][audio_name] = {
+                        "1": {
+                            "key": [],
+                            "type1": "click",
+                            "type2": "simultaneously",
+                            "volume_threshold": [1.0, 99.0],
+                        }
+                    }
                     with open(configuration_json_path, "w", encoding="utf-8") as file:
                         json.dump(
                             configuration_json, file, ensure_ascii=False, indent=4
@@ -540,6 +549,8 @@ try:
 
                     # 更新声音选择
                     update_audio_combobox()
+
+                    bind_key_modules_load()
 
                     messagebox.showinfo(text_json["tips"], text_json["success"])
             elif audio_name == "":
@@ -611,6 +622,8 @@ try:
                     # 更新声音选择
                     update_audio_combobox()
 
+                    bind_key_modules_load()
+
                     messagebox.showinfo(text_json["tips"], text_json["success"])
             elif audio_combo_var.get() == "":
                 messagebox.showinfo(
@@ -661,6 +674,8 @@ try:
 
                     # 更新声音选择
                     update_audio_combobox()
+
+                    bind_key_modules_load()
 
                     messagebox.showinfo(text_json["tips"], text_json["success"])
         except Exception as e:
@@ -720,8 +735,9 @@ try:
                                 audio_file_pack(update=True)
                             time.sleep(0.001)
                     except Exception as e:
-                        print(e)
-                        messagebox.showinfo("error", e)
+                        error_info = traceback.format_exc()
+                        print(error_info)
+                        messagebox.showinfo("error", error_info)
 
                 save_flag_thread = threading.Thread(target=save_flag)
                 save_flag_thread.start()
@@ -827,8 +843,9 @@ try:
 
                             model_training_button.config(bg="SystemButtonFace")
                         except Exception as e:
-                            print(e)
-                            messagebox.showinfo("error", e)
+                            error_info = traceback.format_exc()
+                            print(error_info)
+                            messagebox.showinfo("error", error_info)
 
                     save_flag_thread = threading.Thread(target=queue_get)
                     save_flag_thread.start()
@@ -942,8 +959,9 @@ try:
                                 index += 1
                             time.sleep(0.001)
                     except Exception as e:
-                        print(e)
-                        messagebox.showinfo("error", e)
+                        error_info = traceback.format_exc()
+                        print(error_info)
+                        messagebox.showinfo("error", error_info)
 
                 get_name_queue_thread = threading.Thread(target=get_name_queue)
                 get_name_queue_thread.start()
@@ -966,6 +984,13 @@ try:
         for widget in bind_key_modules_frame.winfo_children():
             widget.destroy()
 
+        if (
+            audio_combo_var.get()
+            not in configuration_json["configuration"][
+                configuration_json["now_configuration"]
+            ]["audio"]
+        ):
+            return
         bind_key_json = configuration_json["configuration"][
             configuration_json["now_configuration"]
         ]["audio"][audio_combo_var.get()]
@@ -1347,45 +1372,93 @@ try:
                 def get_name_queue():
                     try:
                         wait_key_release_audio = {}
+                        key_index = {}
                         while not start_running_thread_stop_flag.is_set():
                             if not acquisition_audio_name_queue.empty():
                                 audio = acquisition_audio_name_queue.get(timeout=1)
-                                key = configuration_json["configuration"][
+                                energy = acquisition_audio_energy_queue.get(timeout=1)
+
+                                for id, value in configuration_json["configuration"][
                                     configuration_json["now_configuration"]
-                                ]["audio"][audio]["type"]
-                                if key != "release":
-                                    key_press(
-                                        configuration_json["configuration"][
-                                            configuration_json["now_configuration"]
-                                        ]["audio"][audio]["key"]
-                                    )
-                                wait_key_release_audio[audio] = True
+                                ]["audio"][audio].items():
+                                    if not (
+                                        value["volume_threshold"][0] / 100 <= energy[1]
+                                        and energy[1]
+                                        <= value["volume_threshold"][1] / 100
+                                    ):
+                                        continue
 
-                                def wait_key_release(audio):
-                                    wait_key_release_audio[audio] = False
-                                    key = configuration_json["configuration"][
-                                        configuration_json["now_configuration"]
-                                    ]["audio"][audio]["type"]
-                                    if key == "short_press":
-                                        time.sleep(0.5)
-                                    if not wait_key_release_audio[audio]:
-                                        if key != "hold":
-                                            key_release(
-                                                configuration_json["configuration"][
-                                                    configuration_json[
-                                                        "now_configuration"
-                                                    ]
-                                                ]["audio"][audio]["key"]
+                                    if value["type2"] == "simultaneously":
+                                        if value["type1"] == "click":
+                                            key_press(value["key"])
+                                            key_release(value["key"])
+                                        elif value["type1"] == "short_press":
+                                            if audio not in wait_key_release_audio:
+                                                wait_key_release_audio[audio] = 0
+                                                key_press(value["key"])
+                                            elif wait_key_release_audio[audio] == 0:
+                                                key_press(value["key"])
+                                        elif value["type1"] == "hold":
+                                            key_release(value["key"])
+                                            key_press(value["key"])
+                                        elif value["type1"] == "release":
+                                            key_release(value["key"])
+                                    elif value["type2"] == "sequentially":
+                                        if audio not in key_index:
+                                            key_index[audio] = 0
+                                        else:
+                                            key_index[audio] += 1
+                                        key = [
+                                            value["key"][
+                                                key_index[audio] % len(value["key"])
+                                            ]
+                                        ]
+                                        if value["type1"] == "click":
+                                            key_press(key)
+                                            key_release(key)
+                                        elif value["type1"] == "short_press":
+                                            key_press(key)
+                                        elif value["type1"] == "hold":
+                                            key_press(key)
+                                        elif value["type1"] == "release":
+                                            key_release(key)
+
+                                    def wait_key_release(audio, key, type2):
+                                        if type2 == "simultaneously":
+                                            wait_key_release_audio[audio] += 1
+                                            time.sleep(0.5)
+                                            wait_key_release_audio[audio] -= 1
+                                            if wait_key_release_audio[audio] == 0:
+                                                key_release(key)
+                                        elif type2 == "sequentially":
+                                            time.sleep(0.5)
+                                            key_release(key)
+
+                                    if value["type1"] == "short_press":
+                                        if value["type2"] == "simultaneously":
+                                            wait_key_release_thread = threading.Thread(
+                                                target=wait_key_release,
+                                                args=(
+                                                    audio,
+                                                    value["key"],
+                                                    value["type2"],
+                                                ),
                                             )
-
-                                wait_key_release_thread = threading.Thread(
-                                    target=wait_key_release, args=(audio,)
-                                )
-                                wait_key_release_thread.start()
+                                        elif value["type2"] == "sequentially":
+                                            wait_key_release_thread = threading.Thread(
+                                                target=wait_key_release,
+                                                args=(
+                                                    audio,
+                                                    key,
+                                                    value["type2"],
+                                                ),
+                                            )
+                                        wait_key_release_thread.start()
                             time.sleep(0.001)
                     except Exception as e:
-                        print(e)
-                        messagebox.showinfo("error", e)
+                        error_info = traceback.format_exc()
+                        print(error_info)
+                        messagebox.showinfo("error", error_info)
 
                 get_name_queue_thread = threading.Thread(target=get_name_queue)
                 get_name_queue_thread.start()
@@ -1549,8 +1622,9 @@ try:
             try:
                 audio_file_canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
             except Exception as e:
-                print(e)
-                messagebox.showinfo("error", e)
+                error_info = traceback.format_exc()
+                print(error_info)
+                messagebox.showinfo("error", error_info)
 
         audio_file_canvas.bind_all("<MouseWheel>", audio_file_canvas_on_mousewheel)
 
@@ -1634,8 +1708,9 @@ try:
                     int(-1 * (event.delta / 120)), "units"
                 )
             except Exception as e:
-                print(e)
-                messagebox.showinfo("error", e)
+                error_info = traceback.format_exc()
+                print(error_info)
+                messagebox.showinfo("error", error_info)
 
         bind_key_modules_canvas.bind_all(
             "<MouseWheel>", bind_key_modules_canvas_on_mousewheel
@@ -1665,5 +1740,6 @@ try:
         window.mainloop()
 
 except Exception as e:
-    print(e)
-    messagebox.showinfo("error", e)
+    error_info = traceback.format_exc()
+    print(error_info)
+    messagebox.showinfo("error", error_info)

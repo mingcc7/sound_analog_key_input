@@ -48,7 +48,7 @@
     "start_running": "开始运行（声音监听）",
     "model_not_exist": "模型不存在！",
     "is_running": "正在运行！",
-    "volume_threshold_set": "全局音量最低值设置",
+    "volume_threshold_set": "音量阈值设置",
     "volume_threshold_only_be_number": "音量阈值只能为数字！",
     "volume_threshold_cannot_less_1": "音量阈值不可小于1！"
 }
