@@ -36,6 +36,11 @@
      "model_test_in_progress": "Model test in progress!",
      "bind_key": "Bind key",
      "bind_key_in_progress": "Bind key in progress!",
+     "bind_key_volume_threshold_set": "Volume threshold Settings",
+     "bind_key_add": "Bind key add",
+     "bind_key_del": "Bind key delete",
+     "simultaneously": "Simultaneously",
+     "sequentially": "Sequentially",
      "click": "click",
      "short_press": "short press",
      "hold": "hold",
@@ -43,7 +48,7 @@
      "start_running": "Start running(Audio monitoring)",
      "model_not_exist": "Model does not exist!",
      "is_running": "Is running!",
-     "volume_threshold_set": "Volume threshold set",
+     "volume_threshold_set": "Global minimum volume setting",
      "volume_threshold_only_be_number": "The volume threshold can only be a number!",
      "volume_threshold_cannot_less_1": "The volume threshold cannot be less than 1!"
 }

@@ -36,6 +36,11 @@
     "model_test_in_progress": "模型测试中！",
     "bind_key": "绑定按键",
     "bind_key_in_progress": "绑定按键运行中！",
+    "bind_key_volume_threshold_set": "音量阈值设置",
+    "bind_key_add": "绑定按键添加",
+    "bind_key_del": "绑定按键删除",
+    "simultaneously": "同时",
+    "sequentially": "依次",
     "click": "单击",
     "short_press": "短按",
     "hold": "按住",
@@ -43,7 +48,7 @@
     "start_running": "开始运行（声音监听）",
     "model_not_exist": "模型不存在！",
     "is_running": "正在运行！",
-    "volume_threshold_set": "音量阈值设置",
+    "volume_threshold_set": "全局音量最低值设置",
     "volume_threshold_only_be_number": "音量阈值只能为数字！",
     "volume_threshold_cannot_less_1": "音量阈值不可小于1！"
 }

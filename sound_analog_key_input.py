@@ -56,8 +56,12 @@ try:
             global import_model_success
             import_model_success = True
             print("import model training success")
-            model_training_Lable["text"] = ""
-            model_test_Lable["text"] = ""
+
+            try:
+                model_training_Lable["text"] = ""
+                model_test_Lable["text"] = ""
+            except Exception as e:
+                print(e)
         except Exception as e:
             error_info = traceback.format_exc()
             print(error_info)
@@ -123,20 +127,13 @@ try:
             audio_acquisition_stop_button["text"] = text_json["audio_acquisition_stop"]
             model_training_button["text"] = text_json["model_training"]
             model_test_button["text"] = text_json["model_test"]
-            bind_key_button["text"] = text_json["bind_key"]
+            bind_key_add_button["text"] = text_json["bind_key_add"]
+
             start_running_button["text"] = text_json["start_running"]
             volume_threshold_set_button["text"] = text_json["volume_threshold_set"]
-            bind_key_type_combo["values"] = [
-                text_json["click"],
-                text_json["short_press"],
-                text_json["hold"],
-                text_json["release"],
-            ]
+
             if audio_combo_var.get() != "":
-                key = configuration_json["configuration"][
-                    configuration_json["now_configuration"]
-                ]["audio"][audio_combo_var.get()]["type"]
-                bind_key_type_combo.set(text_json[key])
+                bind_key_modules_load()
 
             audio_file_pack()
             model_training_Lable["text"] = ""
@@ -190,7 +187,6 @@ try:
                 model_training_Lable["text"] = ""
                 volume_energy_Lable["text"] = ""
                 model_test_Lable["text"] = ""
-                bind_key_Lable["text"] = ""
         except Exception as e:
             error_info = traceback.format_exc()
             print(error_info)
@@ -399,13 +395,7 @@ try:
             audio_file_pack()
 
             if audio_combo_var.get() != "":
-                bind_key_Lable["text"] = configuration_json["configuration"][
-                    configuration_json["now_configuration"]
-                ]["audio"][audio_combo_var.get()]["key"]
-                key = configuration_json["configuration"][
-                    configuration_json["now_configuration"]
-                ]["audio"][audio_combo_var.get()]["type"]
-                bind_key_type_combo.set(text_json[key])
+                bind_key_modules_load()
         except Exception as e:
             error_info = traceback.format_exc()
             print(error_info)
@@ -962,10 +952,251 @@ try:
             print(error_info)
             messagebox.showinfo("error", error_info)
 
+    # 绑定按键模块加载
+    bind_key_button_map = {}
+    bind_key_Lable_map = {}
+    bind_key_type1_combo_var_map = {}
+    bind_key_type1_combo_map = {}
+    bind_key_type2_combo_var_map = {}
+    bind_key_type2_combo_map = {}
+    bind_key_volume_min_threshold_entry_map = {}
+    bind_key_volume_max_threshold_entry_map = {}
+
+    def bind_key_modules_load():
+        for widget in bind_key_modules_frame.winfo_children():
+            widget.destroy()
+
+        bind_key_json = configuration_json["configuration"][
+            configuration_json["now_configuration"]
+        ]["audio"][audio_combo_var.get()]
+
+        for key, value in bind_key_json.items():
+            # 按键绑定模块容器
+            bind_key_module_frame = tk.Frame(bind_key_modules_frame)
+            bind_key_module_frame.pack(fill=tk.BOTH, side=tk.TOP)
+
+            # 按键绑定容器
+            bind_key_frame = tk.Frame(bind_key_module_frame)
+            bind_key_frame.pack(fill=tk.BOTH)
+
+            # 按键绑定
+            bind_key_button_map[key] = tk.Button(
+                bind_key_frame, command=lambda key=key: on_bind_key_button_click(key)
+            )
+            bind_key_button_map[key].pack(side=tk.LEFT, padx=5, pady=1)
+            bind_key_button_map[key]["text"] = text_json["bind_key"]
+
+            # 按键绑定结果
+            bind_key_Lable_map[key] = tk.Label(bind_key_frame)
+            bind_key_Lable_map[key].pack(side=tk.LEFT, padx=5, pady=1)
+            bind_key_Lable_map[key]["text"] = value["key"]
+
+            # 按键绑定设置容器
+            bind_key_set_frame = tk.Frame(bind_key_module_frame)
+            bind_key_set_frame.pack(fill=tk.BOTH)
+
+            # 按键类型1选择
+            bind_key_type1_combo_var_map[key] = tk.StringVar()
+            bind_key_type1_combo_var_map[key].trace_add(
+                "write",
+                lambda *args, key=key: on_bind_key_type_combobox_change(
+                    *args, key=key, type_index=1
+                ),
+            )
+            bind_key_type1_combo_map[key] = ttk.Combobox(
+                bind_key_set_frame,
+                textvariable=bind_key_type1_combo_var_map[key],
+                state="readonly",
+                width=4,
+            )
+            bind_key_type1_combo_map[key].pack(side=tk.LEFT, padx=5, pady=1)
+            bind_key_type1_combo_map[key]["values"] = [
+                text_json["click"],
+                text_json["short_press"],
+                text_json["hold"],
+                text_json["release"],
+            ]
+            bind_key_type1_combo_map[key].set(text_json[value["type1"]])
+
+            # 按键类型2选择
+            bind_key_type2_combo_var_map[key] = tk.StringVar()
+            bind_key_type2_combo_var_map[key].trace_add(
+                "write",
+                lambda *args, key=key: on_bind_key_type_combobox_change(
+                    *args, key=key, type_index=2
+                ),
+            )
+            bind_key_type2_combo_map[key] = ttk.Combobox(
+                bind_key_set_frame,
+                textvariable=bind_key_type2_combo_var_map[key],
+                state="readonly",
+                width=4,
+            )
+            bind_key_type2_combo_map[key].pack(side=tk.LEFT, padx=5, pady=1)
+            bind_key_type2_combo_map[key]["values"] = [
+                text_json["simultaneously"],
+                text_json["sequentially"],
+            ]
+            bind_key_type2_combo_map[key].set(text_json[value["type2"]])
+
+            # 绑定按键音量最低阈值
+            bind_key_volume_min_threshold_entry_map[key] = tk.Entry(
+                bind_key_set_frame, width=4
+            )
+            bind_key_volume_min_threshold_entry_map[key].pack(
+                side=tk.LEFT, padx=5, pady=1
+            )
+            bind_key_volume_min_threshold_entry_map[key].insert(
+                0, value["volume_threshold"][0]
+            )
+
+            # 绑定按键音量阈值中间符号
+            bind_key_volume_threshold_middle_Lable = tk.Label(
+                bind_key_set_frame, text="-"
+            )
+            bind_key_volume_threshold_middle_Lable.pack(side=tk.LEFT, pady=1)
+
+            # 绑定按键音量最高阈值
+            bind_key_volume_max_threshold_entry_map[key] = tk.Entry(
+                bind_key_set_frame, width=4
+            )
+            bind_key_volume_max_threshold_entry_map[key].pack(
+                side=tk.LEFT, padx=5, pady=1
+            )
+            bind_key_volume_max_threshold_entry_map[key].insert(
+                0, value["volume_threshold"][1]
+            )
+
+            # 绑定按键音量阈值设置
+            bind_key_volume_threshold_set_button = tk.Button(
+                bind_key_set_frame,
+                command=lambda key=key: on_bind_key_volume_threshold_set_button_click(
+                    key
+                ),
+            )
+            bind_key_volume_threshold_set_button.pack(side=tk.LEFT, padx=5, pady=1)
+            bind_key_volume_threshold_set_button["text"] = text_json[
+                "bind_key_volume_threshold_set"
+            ]
+
+            # 删除绑定按键
+            bind_key_del_button = tk.Button(
+                bind_key_set_frame,
+                command=lambda key=key: on_bind_key_del_button_click(key),
+            )
+            bind_key_del_button.pack(side=tk.LEFT, padx=5, pady=1)
+            bind_key_del_button["text"] = text_json["bind_key_del"]
+
+        # 更新滚动区域
+        if bind_key_modules_frame.winfo_children():
+            bind_key_modules_frame.update_idletasks()
+            bind_key_modules_canvas.config(
+                scrollregion=bind_key_modules_canvas.bbox("all")
+            )
+            bind_key_modules_canvas.yview_moveto(0.0)
+
+    # 绑定按键删除
+    def on_bind_key_del_button_click(key):
+        try:
+            answer = messagebox.askquestion(
+                text_json["verify"], text_json["want_to_continue"]
+            )
+            if answer == "yes":
+                configuration_json["configuration"][
+                    configuration_json["now_configuration"]
+                ]["audio"][audio_combo_var.get()].pop(key)
+                with open(configuration_json_path, "w", encoding="utf-8") as file:
+                    json.dump(configuration_json, file, ensure_ascii=False, indent=4)
+
+                bind_key_modules_load()
+
+                messagebox.showinfo(text_json["tips"], text_json["success"])
+        except Exception as e:
+            error_info = traceback.format_exc()
+            print(error_info)
+            messagebox.showinfo("error", error_info)
+
+    # 绑定按键音量阈值设置
+    def on_bind_key_volume_threshold_set_button_click(key):
+        try:
+            min = bind_key_volume_min_threshold_entry_map[key].get()
+            max = bind_key_volume_max_threshold_entry_map[key].get()
+            try:
+                min = float(min)
+                max = float(max)
+            except Exception as e:
+                messagebox.showinfo(
+                    text_json["tips"], text_json["volume_threshold_only_be_number"]
+                )
+                return
+            if min < 1 or max < 1:
+                messagebox.showinfo(
+                    text_json["tips"],
+                    text_json["volume_threshold_cannot_less_1"],
+                )
+                return
+
+            configuration_json["configuration"][
+                configuration_json["now_configuration"]
+            ]["audio"][audio_combo_var.get()][key]["volume_threshold"] = [min, max]
+
+            with open(configuration_json_path, "w", encoding="utf-8") as file:
+                json.dump(configuration_json, file, ensure_ascii=False, indent=4)
+            messagebox.showinfo(text_json["tips"], text_json["success"])
+        except Exception as e:
+            error_info = traceback.format_exc()
+            print(error_info)
+            messagebox.showinfo("error", error_info)
+
+    # 绑定按键添加
+    def on_bind_key_add_button_click():
+        try:
+            if not bind_key_thread_stop_flag.is_set():
+                messagebox.showinfo(
+                    text_json["tips"], text_json["bind_key_in_progress"]
+                )
+            elif audio_combo_var.get() == "":
+                messagebox.showinfo(
+                    text_json["tips"], text_json["audio_now_cannot_be_empty"]
+                )
+            else:
+                answer = messagebox.askquestion(
+                    text_json["verify"], text_json["want_to_continue"]
+                )
+                if answer == "yes":
+                    bind_key_json = configuration_json["configuration"][
+                        configuration_json["now_configuration"]
+                    ]["audio"][audio_combo_var.get()]
+                    if len(bind_key_json) > 0:
+                        max_key = max(map(int, bind_key_json.keys()))
+                    else:
+                        max_key = 0
+                    configuration_json["configuration"][
+                        configuration_json["now_configuration"]
+                    ]["audio"][audio_combo_var.get()][f"{max_key+1}"] = {
+                        "key": [],
+                        "type1": "click",
+                        "type2": "simultaneously",
+                        "volume_threshold": [1.0, 99.0],
+                    }
+                    with open(configuration_json_path, "w", encoding="utf-8") as file:
+                        json.dump(
+                            configuration_json,
+                            file,
+                            ensure_ascii=False,
+                            indent=4,
+                        )
+                    bind_key_modules_load()
+
+        except Exception as e:
+            error_info = traceback.format_exc()
+            print(error_info)
+            messagebox.showinfo("error", error_info)
+
     # 绑定按键
     bind_key_thread_stop_flag.set()
 
-    def on_bind_key_button_click():
+    def on_bind_key_button_click(key_name):
         try:
             if not bind_key_thread_stop_flag.is_set():
                 messagebox.showinfo(
@@ -984,7 +1215,7 @@ try:
                         break
                 key_listener_thread = threading.Thread(target=key_listener)
                 key_listener_thread.start()
-                bind_key_button.config(bg="red")
+                bind_key_button_map[key_name].config(bg="red")
 
                 def queue_get():
                     try:
@@ -994,11 +1225,13 @@ try:
                             while not key_queue.empty():
                                 key = key_queue.get(timeout=1)
                                 keys.append(f"{key}")
-                                bind_key_Lable["text"] = keys
+                                bind_key_Lable_map[key_name]["text"] = keys
 
                                 configuration_json["configuration"][
                                     configuration_json["now_configuration"]
-                                ]["audio"][audio_combo_var.get()]["key"] = keys
+                                ]["audio"][audio_combo_var.get()][key_name][
+                                    "key"
+                                ] = keys
                                 with open(
                                     configuration_json_path, "w", encoding="utf-8"
                                 ) as file:
@@ -1008,16 +1241,17 @@ try:
                                         ensure_ascii=False,
                                         indent=4,
                                     )
-                                time.sleep(0.1)
+                                time.sleep(0.5)
                                 stop = True
                             if stop:
                                 bind_key_thread_stop_flag.set()
 
                             time.sleep(0.001)
-                        bind_key_button.config(bg="SystemButtonFace")
+                        bind_key_button_map[key_name].config(bg="SystemButtonFace")
                     except Exception as e:
-                        print(e)
-                        messagebox.showinfo("error", e)
+                        error_info = traceback.format_exc()
+                        print(error_info)
+                        messagebox.showinfo("error", error_info)
 
                 queue_get_thread = threading.Thread(target=queue_get)
                 queue_get_thread.start()
@@ -1027,7 +1261,7 @@ try:
             messagebox.showinfo("error", error_info)
 
     # 绑定按键类型
-    def on_bind_key_type_combobox_change(*args):
+    def on_bind_key_type_combobox_change(name, index, mode, key, type_index):
         try:
             if not bind_key_thread_stop_flag.is_set():
                 messagebox.showinfo(
@@ -1038,23 +1272,21 @@ try:
                     text_json["tips"], text_json["audio_now_cannot_be_empty"]
                 )
             else:
-                index = bind_key_type_combo.current()
-                if index == 0:
+                if type_index == 1:
+                    index = bind_key_type1_combo_map[key].current()
+                    type1 = ["click", "short_press", "hold", "release"]
                     configuration_json["configuration"][
                         configuration_json["now_configuration"]
-                    ]["audio"][audio_combo_var.get()]["type"] = "click"
-                    with open(configuration_json_path, "w", encoding="utf-8") as file:
-                        json.dump(
-                            configuration_json, file, ensure_ascii=False, indent=4
-                        )
-                elif index == 1:
+                    ]["audio"][audio_combo_var.get()][key]["type1"] = type1[index]
+                elif type_index == 2:
+                    index = bind_key_type2_combo_map[key].current()
+                    type2 = ["simultaneously", "sequentially"]
                     configuration_json["configuration"][
                         configuration_json["now_configuration"]
-                    ]["audio"][audio_combo_var.get()]["type"] = "hold"
-                    with open(configuration_json_path, "w", encoding="utf-8") as file:
-                        json.dump(
-                            configuration_json, file, ensure_ascii=False, indent=4
-                        )
+                    ]["audio"][audio_combo_var.get()][key]["type2"] = type2[index]
+
+                with open(configuration_json_path, "w", encoding="utf-8") as file:
+                    json.dump(configuration_json, file, ensure_ascii=False, indent=4)
         except Exception as e:
             error_info = traceback.format_exc()
             print(error_info)
@@ -1176,7 +1408,11 @@ try:
         center_frame.pack(expand=True)
 
         # 左侧容器
-        left_frame = tk.Frame(center_frame)
+        top_frame = tk.Frame(center_frame)
+        top_frame.pack(side=tk.TOP, fill=tk.BOTH)
+
+        # 左侧容器
+        left_frame = tk.Frame(top_frame)
         left_frame.pack(side=tk.LEFT, fill=tk.BOTH)
 
         # 语言选择
@@ -1267,7 +1503,7 @@ try:
         audio_delete_button.pack(side=tk.LEFT, padx=5, pady=1)
 
         # 右侧容器
-        right_frame = tk.Frame(center_frame)
+        right_frame = tk.Frame(top_frame)
         right_frame.pack(side=tk.LEFT, fill=tk.BOTH)
 
         # 声音采集容器
@@ -1296,7 +1532,7 @@ try:
         audio_file_canvas = tk.Canvas(
             audio_file_scrollbar_frame,
             yscrollcommand=audio_file_scrollbar.set,
-            height=270,
+            height=240,
         )
         audio_file_canvas.pack()
         audio_file_scrollbar.config(command=audio_file_canvas.yview)
@@ -1364,34 +1600,52 @@ try:
         model_test_Lable = tk.Label(model_test_frame)
         model_test_Lable.pack(side=tk.LEFT, padx=5, pady=1)
 
-        # 按键绑定容器
-        bind_key_frame = tk.Frame(left_frame)
-        bind_key_frame.pack(fill=tk.BOTH)
-
-        # 按键绑定
-        bind_key_button = tk.Button(bind_key_frame, command=on_bind_key_button_click)
-        bind_key_button.pack(side=tk.LEFT, padx=5, pady=1)
-
-        # 按键类型选择
-        bind_key_type_combo_var = tk.StringVar()
-        bind_key_type_combo_var.trace_add("write", on_bind_key_type_combobox_change)
-        bind_key_type_combo = ttk.Combobox(
-            bind_key_frame,
-            textvariable=bind_key_type_combo_var,
-            state="readonly",
-            width=5,
+        # 按键绑定添加
+        bind_key_add_button = tk.Button(
+            center_frame, command=on_bind_key_add_button_click
         )
-        bind_key_type_combo.pack(side=tk.LEFT, padx=5, pady=1)
+        bind_key_add_button.pack(fill=tk.BOTH, side=tk.TOP)
 
-        # 按键绑定结果
-        bind_key_Lable = tk.Label(bind_key_frame)
-        bind_key_Lable.pack(side=tk.LEFT, padx=5, pady=1)
+        # 按键绑定多个模块容器
+        bind_key_modules_scrollbar_frame = tk.Frame(center_frame)
+        bind_key_modules_scrollbar_frame.pack(fill=tk.BOTH)
+
+        bind_key_modules_scrollbar = tk.Scrollbar(bind_key_modules_scrollbar_frame)
+        bind_key_modules_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        bind_key_modules_canvas = tk.Canvas(
+            bind_key_modules_scrollbar_frame,
+            yscrollcommand=bind_key_modules_scrollbar.set,
+            height=100,
+        )
+        bind_key_modules_canvas.pack(fill=tk.BOTH)
+        bind_key_modules_scrollbar.config(command=bind_key_modules_canvas.yview)
+
+        bind_key_modules_frame = tk.Frame(bind_key_modules_canvas)
+        bind_key_modules_canvas.create_window(
+            (0, 0), window=bind_key_modules_frame, anchor="nw"
+        )
+
+        bind_key_modules_canvas.config(scrollregion=bind_key_modules_canvas.bbox("all"))
+
+        def bind_key_modules_canvas_on_mousewheel(event):
+            try:
+                bind_key_modules_canvas.yview_scroll(
+                    int(-1 * (event.delta / 120)), "units"
+                )
+            except Exception as e:
+                print(e)
+                messagebox.showinfo("error", e)
+
+        bind_key_modules_canvas.bind_all(
+            "<MouseWheel>", bind_key_modules_canvas_on_mousewheel
+        )
 
         # 开始运行
         start_running_button = tk.Button(
-            left_frame, command=on_start_running_button_click
+            center_frame, command=on_start_running_button_click
         )
-        start_running_button.pack(fill=tk.BOTH)
+        start_running_button.pack(fill=tk.BOTH, side=tk.TOP)
 
         language_combo.set(configuration_json["language"])
         if configuration_json["now_configuration"] != "" and os.path.exists(
