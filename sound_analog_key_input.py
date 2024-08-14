@@ -18,16 +18,35 @@ try:
     from audio_acquisition import acquisition_audio_energy_queue
     from audio_acquisition import volume_threshold_queue
 
+    from key_controls import key_listener
+    from key_controls import bind_key_thread_stop_flag
+    from key_controls import key_queue
+    from key_controls import key_press
+    from key_controls import key_release
+
+    # 无控制台运行时模型训练无此行代码会报错
     sys.stdout = open("log.log", "w")
+
+    configuration_json_path = "configuration.json"
+
+    with open(configuration_json_path, "r", encoding="utf-8") as file:
+        configuration_json = json.load(file)
+
+    with open(
+        f"language/{configuration_json['language']}.json", "r", encoding="utf-8"
+    ) as file:
+        text_json = json.load(file)
 
     # 线程导入需要keras的模块，keras加载慢
     model_training = None
     model_training_queue = None
     import_model_success = False
 
-    def import_audio_model():
+    def import_model_training():
         try:
-            print("import model loading")
+            print("import model training loading")
+            model_training_Lable["text"] = text_json["loading"]
+            model_test_Lable["text"] = text_json["loading"]
             global model_training
             from model_training import model_training
 
@@ -36,22 +55,13 @@ try:
 
             global import_model_success
             import_model_success = True
-            print("import model success")
+            print("import model training success")
+            model_training_Lable["text"] = ""
+            model_test_Lable["text"] = ""
         except Exception as e:
             error_info = traceback.format_exc()
             print(error_info)
             messagebox.showinfo("error", error_info)
-
-    import_audio_model_thread = threading.Thread(target=import_audio_model)
-    import_audio_model_thread.start()
-
-    from key_controls import key_listener
-    from key_controls import bind_key_thread_stop_flag
-    from key_controls import key_queue
-    from key_controls import key_press
-    from key_controls import key_release
-
-    configuration_json_path = "configuration.json"
 
     # 窗口居中
     def center_window(window, width, height):
@@ -1153,14 +1163,6 @@ try:
             messagebox.showinfo("error", error_info)
 
     if __name__ == "__main__":
-        with open(configuration_json_path, "r", encoding="utf-8") as file:
-            configuration_json = json.load(file)
-
-        with open(
-            f"language/{configuration_json['language']}.json", "r", encoding="utf-8"
-        ) as file:
-            text_json = json.load(file)
-
         window = tk.Tk()
         # 调用center_window函数使窗口居中
         center_window(
@@ -1401,6 +1403,10 @@ try:
 
         # 绑定关闭事件
         window.protocol("WM_DELETE_WINDOW", delete_window)
+
+        # 导入model_training
+        import_model_training_thread = threading.Thread(target=import_model_training)
+        import_model_training_thread.start()
 
         window.mainloop()
 
