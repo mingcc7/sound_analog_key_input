@@ -52,5 +52,6 @@
      "only_be_number": "Only be a number!",
      "cannot_less_1": "Cannot be less than 1!",
      "probability_threshold_set": "Probability threshold set",
-     "one_volume_count_set": "Single audio sampling number Settings"
+     "one_volume_count_set": "Single audio sampling number Settings",
+     "one_volume_count_change_exception": "Single audio sampling times change, please retrain the model!"
 }

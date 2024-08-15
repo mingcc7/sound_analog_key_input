@@ -52,5 +52,6 @@
     "only_be_number": "只能为数字！",
     "cannot_less_1": "不可小于1！",
     "probability_threshold_set": "概率阈值设置",
-    "one_volume_count_set": "单个音频取样次数设置"
+    "one_volume_count_set": "单个音频取样次数设置",
+    "one_volume_count_change_exception": "单个音频取样次数改变，请重新训练模型！"
 }

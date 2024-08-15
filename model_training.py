@@ -18,6 +18,12 @@ zeros_data = np.zeros(CHUNK, dtype=np.int16)
 
 model_training_queue = queue.Queue()
 
+# 预运行
+librosa.feature.mfcc(
+    y=zeros_data.astype(np.float32) / 32768.0, sr=RATE, n_fft=len(zeros_data)
+)
+
+
 # 音色特征提取函数
 def extract_features(file_path, one_volume_count, y=None, sr=None):
     if file_path != None:
@@ -30,7 +36,7 @@ def extract_features(file_path, one_volume_count, y=None, sr=None):
     elif count > one_volume_count:
         y = y[: one_volume_count * CHUNK]
 
-    mfccs = librosa.feature.mfcc(y=y, sr=sr, n_fft=CHUNK)  # 提取MFCC特征
+    mfccs = librosa.feature.mfcc(y=y, sr=sr, n_fft=len(y))  # 提取MFCC特征
     # mfccs_processed = np.mean(mfccs.T, axis=0)  # 平均化处理
     return mfccs.flatten()
 

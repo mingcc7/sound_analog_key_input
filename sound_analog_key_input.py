@@ -144,6 +144,7 @@ try:
             audio_file_pack()
             model_training_Lable["text"] = ""
             volume_energy_Lable["text"] = ""
+            probability_Lable["text"] = ""
             model_test_Lable["text"] = ""
         except Exception as e:
             error_info = traceback.format_exc()
@@ -212,6 +213,7 @@ try:
 
                 model_training_Lable["text"] = ""
                 volume_energy_Lable["text"] = ""
+                probability_Lable["text"] = ""
                 model_test_Lable["text"] = ""
         except Exception as e:
             error_info = traceback.format_exc()
@@ -265,8 +267,8 @@ try:
                         )
 
                     configuration_json["configuration"][configuration_name] = {
-                        "one_volume_count": 10,
-                        "volume_threshold": 1.0,
+                        "one_volume_count": 2,
+                        "volume_threshold": 5.0,
                         "probability_threshold": 0.9,
                         "audio": {},
                     }
@@ -750,6 +752,7 @@ try:
                         f"configuration/{configuration_combo_var.get()}/audio/{audio_combo_var.get()}",
                         audio_acquisition_thread_stop_flag,
                         audio_acquisition_thread_save_flag,
+                        text_json["one_volume_count_change_exception"],
                     ),
                 )
                 audio_acquisition_thread.start()
@@ -758,6 +761,8 @@ try:
                 def save_flag():
                     try:
                         while not audio_acquisition_thread_stop_flag.is_set():
+                            if not audio_acquisition_thread.is_alive():
+                                on_audio_acquisition_stop_button_click()
                             if audio_acquisition_thread_save_flag.is_set():
                                 audio_acquisition_thread_save_flag.clear()
                                 audio_file_pack(update=True)
@@ -1029,6 +1034,7 @@ try:
                         f"configuration/{configuration_combo_var.get()}",
                         model_test_thread_stop_flag,
                         None,
+                        text_json["one_volume_count_change_exception"],
                     ),
                 )
                 audio_acquisition_thread.start()
@@ -1038,6 +1044,8 @@ try:
                     try:
                         index = 1
                         while not model_test_thread_stop_flag.is_set():
+                            if not audio_acquisition_thread.is_alive():
+                                on_audio_acquisition_stop_button_click()
                             if not acquisition_audio_name_queue.empty():
                                 probability = acquisition_audio_probability_queue.get(
                                     timeout=1
@@ -1450,10 +1458,17 @@ try:
                 messagebox.showinfo(text_json["tips"], text_json["model_not_exist"])
             else:
                 start_running_thread_stop_flag.clear()
+
+                one_volume_count = configuration_json["configuration"][
+                    configuration_json["now_configuration"]
+                ]["one_volume_count"]
+                one_volume_count_queue.put(one_volume_count)
+
                 volume_threshold = configuration_json["configuration"][
                     configuration_json["now_configuration"]
                 ]["volume_threshold"]
                 volume_threshold_queue.put(volume_threshold)
+
                 start_running_thread = threading.Thread(
                     target=audio_acquisition,
                     args=(
@@ -1461,6 +1476,7 @@ try:
                         f"configuration/{configuration_combo_var.get()}",
                         start_running_thread_stop_flag,
                         None,
+                        text_json["one_volume_count_change_exception"],
                     ),
                 )
                 start_running_thread.start()
@@ -1471,6 +1487,8 @@ try:
                         wait_key_release_audio = {}
                         key_index = {}
                         while not start_running_thread_stop_flag.is_set():
+                            if not start_running_thread.is_alive():
+                                on_audio_acquisition_stop_button_click()
                             if not acquisition_audio_name_queue.empty():
                                 audio = acquisition_audio_name_queue.get(timeout=1)
                                 energy = acquisition_audio_energy_queue.get(timeout=1)
@@ -1717,7 +1735,7 @@ try:
         audio_file_canvas = tk.Canvas(
             audio_file_scrollbar_frame,
             yscrollcommand=audio_file_scrollbar.set,
-            height=240,
+            height=310,
         )
         audio_file_canvas.pack()
         audio_file_scrollbar.config(command=audio_file_canvas.yview)

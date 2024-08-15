@@ -19,7 +19,7 @@ CHANNELS = 1  # 单声道
 RATE = 44100  # 采样率
 
 
-def audio_acquisition(use_model, save_path, stop_flag, save_flag):
+def audio_acquisition(use_model, save_path, stop_flag, save_flag, exception_text=None):
     try:
         acquisition_audio_energy_queue.queue.clear()
 
@@ -65,7 +65,6 @@ def audio_acquisition(use_model, save_path, stop_flag, save_flag):
 
             # 将数据转换为NumPy数组
             data_np = np.frombuffer(data, dtype=np.int16)
-            data_np_list = np.concatenate((data_np_list, data_np))
 
             # 计算音频片段的平均能量
             energy = round((np.mean(np.abs(data_np)) / 32767.0) * 100, 2)
@@ -81,18 +80,20 @@ def audio_acquisition(use_model, save_path, stop_flag, save_flag):
                 frames.append(data)
                 min_energy = min(min_energy, energy)
                 max_energy = max(max_energy, energy)
+                data_np_list = np.concatenate((data_np_list, data_np))
             elif audio_index > 0:
                 for _ in range(1, one_volume_count - audio_index + 1):
                     frames.append(zeros_data)
                 audio_index = one_volume_count
 
-            if len(frames) > 0 and audio_index == one_volume_count:
+            if len(frames) > 0 and audio_index >= one_volume_count:
                 audio_index = 0
                 if use_model:
                     data_np_list = data_np_list.astype(np.float32) / 32768.0
                     features = extract_features(
                         None, one_volume_count, data_np_list, RATE
                     )
+                    data_np_list = np.empty((0,), dtype=np.int16)
 
                     # 使用模型进行预测
                     predictions = model.predict(np.array([features]))
@@ -128,14 +129,20 @@ def audio_acquisition(use_model, save_path, stop_flag, save_flag):
                     save_flag.set()
 
                 frames = []
-                data_np_list = np.empty((0,), dtype=np.int16)
                 min_energy = float("inf")
                 max_energy = float("-inf")
 
     except Exception as e:
         error_info = traceback.format_exc()
         print(error_info)
-        messagebox.showinfo("error", error_info)
+        if (
+            'ValueError: Input 0 of layer "sequential" is incompatible with the layer: expected shape='
+            in error_info
+            or "Matrix size-incompatible:" in error_info
+        ):
+            messagebox.showinfo("error", exception_text)
+        else:
+            messagebox.showinfo("error", error_info)
 
     finally:
         stream.stop_stream()
