@@ -40,3 +40,4 @@ https://sparanoid.com/lab/7z/download.html
 
 ### (3)音频输出转发到音频输入
 https://vb-audio.com/Cable/index.htm
+http://ntonyx.com/04_vac40_trial.html
