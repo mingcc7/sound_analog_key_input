@@ -34,3 +34,6 @@ python pack_exe.py
 
 ### (1)手机变成计算机的麦克风
 https://wolicheng.com/womic/download.html
+
+### (2)7z压缩
+https://sparanoid.com/lab/7z/download.html
