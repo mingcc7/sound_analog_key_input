@@ -49,6 +49,7 @@
      "model_not_exist": "Model does not exist!",
      "is_running": "Is running!",
      "volume_threshold_set": "Volume threshold set",
-     "volume_threshold_only_be_number": "The volume threshold can only be a number!",
-     "volume_threshold_cannot_less_1": "The volume threshold cannot be less than 1!"
+     "only_be_number": "Only be a number!",
+     "volume_threshold_cannot_less_1": "The volume threshold cannot be less than 1!",
+     "probability_threshold_set": "Probability threshold set"
 }

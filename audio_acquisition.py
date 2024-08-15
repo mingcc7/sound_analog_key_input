@@ -8,6 +8,7 @@ import traceback
 
 acquisition_audio_name_queue = queue.Queue()
 acquisition_audio_energy_queue = queue.Queue()
+acquisition_audio_probability_queue = queue.Queue()
 volume_threshold_queue = queue.Queue()
 
 
@@ -94,10 +95,16 @@ def audio_acquisition(use_model, save_path, stop_flag, save_flag):
                     # 获取预测结果
                     predicted_class = np.argmax(predictions[0])
 
+                    # 概率
+                    probability = predictions[0][predicted_class]
+                    print(probability)
+
                     # 将整数类别转换回原始类别标签
                     predicted_label = encoder.inverse_transform([predicted_class])
                     print(f"Predicted sound type: {predicted_label[0]}")
+
                     acquisition_audio_energy_queue.put((min_energy, max_energy))
+                    acquisition_audio_probability_queue.put(probability)
                     acquisition_audio_name_queue.put(predicted_label[0])
                 else:
                     audio_dirs = os.listdir(save_path)

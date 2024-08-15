@@ -16,6 +16,7 @@ try:
     from audio_acquisition import audio_acquisition
     from audio_acquisition import acquisition_audio_name_queue
     from audio_acquisition import acquisition_audio_energy_queue
+    from audio_acquisition import acquisition_audio_probability_queue
     from audio_acquisition import volume_threshold_queue
 
     from key_controls import key_listener
@@ -131,6 +132,9 @@ try:
 
             start_running_button["text"] = text_json["start_running"]
             volume_threshold_set_button["text"] = text_json["volume_threshold_set"]
+            probability_threshold_set_button["text"] = text_json[
+                "probability_threshold_set"
+            ]
 
             if audio_combo_var.get() != "":
                 bind_key_modules_load()
@@ -177,6 +181,16 @@ try:
                         0,
                         configuration_json["configuration"][selected_value][
                             "volume_threshold"
+                        ],
+                    )
+
+                probability_threshold_entry.delete(0, tk.END)
+
+                if selected_value != "":
+                    probability_threshold_entry.insert(
+                        0,
+                        configuration_json["configuration"][selected_value][
+                            "probability_threshold"
                         ],
                     )
 
@@ -242,6 +256,7 @@ try:
 
                     configuration_json["configuration"][configuration_name] = {
                         "volume_threshold": 1.0,
+                        "probability_threshold": 0.9,
                         "audio": {},
                     }
                     with open(configuration_json_path, "w", encoding="utf-8") as file:
@@ -707,7 +722,6 @@ try:
             elif audio_acquisition_thread_stop_flag.is_set():
                 audio_acquisition_thread_stop_flag.clear()
                 audio_acquisition_thread_save_flag.clear()
-                volume_threshold = 0.01
                 volume_threshold = (
                     configuration_json["configuration"][
                         configuration_json["now_configuration"]
@@ -882,9 +896,33 @@ try:
                         volume_threshold_queue.put(volume_threshold / 100)
                         messagebox.showinfo(text_json["tips"], text_json["success"])
                 except Exception as e:
-                    messagebox.showinfo(
-                        text_json["tips"], text_json["volume_threshold_only_be_number"]
-                    )
+                    messagebox.showinfo(text_json["tips"], text_json["only_be_number"])
+
+        except Exception as e:
+            error_info = traceback.format_exc()
+            print(error_info)
+            messagebox.showinfo("error", error_info)
+
+    # 概率阈值设置
+    def on_probability_threshold_set_button_click():
+        try:
+            if configuration_combo_var.get() == "":
+                messagebox.showinfo(
+                    text_json["tips"], text_json["configuration_now_cannot_be_empty"]
+                )
+            else:
+                try:
+                    probability_threshold = float(probability_threshold_entry.get())
+                    configuration_json["configuration"][
+                        configuration_json["now_configuration"]
+                    ]["probability_threshold"] = probability_threshold
+                    with open(configuration_json_path, "w", encoding="utf-8") as file:
+                        json.dump(
+                            configuration_json, file, ensure_ascii=False, indent=4
+                        )
+                    messagebox.showinfo(text_json["tips"], text_json["success"])
+                except Exception as e:
+                    messagebox.showinfo(text_json["tips"], text_json["only_be_number"])
 
         except Exception as e:
             error_info = traceback.format_exc()
@@ -921,7 +959,6 @@ try:
                 messagebox.showinfo(text_json["tips"], text_json["model_not_exist"])
             else:
                 model_test_thread_stop_flag.clear()
-                volume_threshold = 0.01
                 volume_threshold = (
                     configuration_json["configuration"][
                         configuration_json["now_configuration"]
@@ -945,18 +982,29 @@ try:
                     try:
                         index = 1
                         while not model_test_thread_stop_flag.is_set():
-                            energy = (0.0123, 0.01234)
-                            if not acquisition_audio_energy_queue.empty():
-                                energy = acquisition_audio_energy_queue.get(timeout=1)
-                                energy = tuple(
-                                    f"{element * 100:.2f}" for element in energy
-                                )
-                                volume_energy_Lable["text"] = f"{energy[0]}-{energy[1]}"
                             if not acquisition_audio_name_queue.empty():
-                                model_test_Lable["text"] = (
-                                    f"{index}:{acquisition_audio_name_queue.get(timeout=1)}"
+                                probability = acquisition_audio_probability_queue.get(
+                                    timeout=1
                                 )
-                                index += 1
+                                name = acquisition_audio_name_queue.get(timeout=1)
+                                energy = acquisition_audio_energy_queue.get(timeout=1)
+                                if (
+                                    probability
+                                    >= configuration_json["configuration"][
+                                        configuration_json["now_configuration"]
+                                    ]["probability_threshold"]
+                                ):
+                                    model_test_Lable["text"] = f"{index}:{name}"
+                                    index += 1
+
+                                    energy = tuple(
+                                        f"{element * 100:.2f}" for element in energy
+                                    )
+                                    volume_energy_Lable["text"] = (
+                                        f"{energy[0]}-{energy[1]}"
+                                    )
+
+                                    probability_Lable["text"] = probability
                             time.sleep(0.001)
                     except Exception as e:
                         error_info = traceback.format_exc()
@@ -1151,9 +1199,7 @@ try:
                 min = float(min)
                 max = float(max)
             except Exception as e:
-                messagebox.showinfo(
-                    text_json["tips"], text_json["volume_threshold_only_be_number"]
-                )
+                messagebox.showinfo(text_json["tips"], text_json["only_be_number"])
                 return
             if min < 1 or max < 1:
                 messagebox.showinfo(
@@ -1350,7 +1396,6 @@ try:
                 messagebox.showinfo(text_json["tips"], text_json["model_not_exist"])
             else:
                 start_running_thread_stop_flag.clear()
-                volume_threshold = 0.01
                 volume_threshold = (
                     configuration_json["configuration"][
                         configuration_json["now_configuration"]
@@ -1378,83 +1423,99 @@ try:
                             if not acquisition_audio_name_queue.empty():
                                 audio = acquisition_audio_name_queue.get(timeout=1)
                                 energy = acquisition_audio_energy_queue.get(timeout=1)
+                                probability = acquisition_audio_probability_queue.get(
+                                    timeout=1
+                                )
 
-                                for id, value in configuration_json["configuration"][
-                                    configuration_json["now_configuration"]
-                                ]["audio"][audio].items():
-                                    if not (
-                                        value["volume_threshold"][0] / 100 <= energy[1]
-                                        and energy[1]
-                                        <= value["volume_threshold"][1] / 100
-                                    ):
-                                        continue
+                                if (
+                                    probability
+                                    >= configuration_json["configuration"][
+                                        configuration_json["now_configuration"]
+                                    ]["probability_threshold"]
+                                ):
+                                    for id, value in configuration_json[
+                                        "configuration"
+                                    ][configuration_json["now_configuration"]]["audio"][
+                                        audio
+                                    ].items():
+                                        if not (
+                                            value["volume_threshold"][0] / 100
+                                            <= energy[1]
+                                            and energy[1]
+                                            <= value["volume_threshold"][1] / 100
+                                        ):
+                                            continue
 
-                                    if value["type2"] == "simultaneously":
-                                        if value["type1"] == "click":
-                                            key_press(value["key"])
-                                            key_release(value["key"])
-                                        elif value["type1"] == "short_press":
-                                            if audio not in wait_key_release_audio:
-                                                wait_key_release_audio[audio] = 0
-                                                key_press(value["key"])
-                                            elif wait_key_release_audio[audio] == 0:
-                                                key_press(value["key"])
-                                        elif value["type1"] == "hold":
-                                            key_release(value["key"])
-                                            key_press(value["key"])
-                                        elif value["type1"] == "release":
-                                            key_release(value["key"])
-                                    elif value["type2"] == "sequentially":
-                                        if audio not in key_index:
-                                            key_index[audio] = 0
-                                        else:
-                                            key_index[audio] += 1
-                                        key = [
-                                            value["key"][
-                                                key_index[audio] % len(value["key"])
-                                            ]
-                                        ]
-                                        if value["type1"] == "click":
-                                            key_press(key)
-                                            key_release(key)
-                                        elif value["type1"] == "short_press":
-                                            key_press(key)
-                                        elif value["type1"] == "hold":
-                                            key_press(key)
-                                        elif value["type1"] == "release":
-                                            key_release(key)
-
-                                    def wait_key_release(audio, key, type2):
-                                        if type2 == "simultaneously":
-                                            wait_key_release_audio[audio] += 1
-                                            time.sleep(0.5)
-                                            wait_key_release_audio[audio] -= 1
-                                            if wait_key_release_audio[audio] == 0:
-                                                key_release(key)
-                                        elif type2 == "sequentially":
-                                            time.sleep(0.5)
-                                            key_release(key)
-
-                                    if value["type1"] == "short_press":
                                         if value["type2"] == "simultaneously":
-                                            wait_key_release_thread = threading.Thread(
-                                                target=wait_key_release,
-                                                args=(
-                                                    audio,
-                                                    value["key"],
-                                                    value["type2"],
-                                                ),
-                                            )
+                                            if value["type1"] == "click":
+                                                key_press(value["key"])
+                                                key_release(value["key"])
+                                            elif value["type1"] == "short_press":
+                                                if audio not in wait_key_release_audio:
+                                                    wait_key_release_audio[audio] = 0
+                                                    key_press(value["key"])
+                                                elif wait_key_release_audio[audio] == 0:
+                                                    key_press(value["key"])
+                                            elif value["type1"] == "hold":
+                                                key_release(value["key"])
+                                                key_press(value["key"])
+                                            elif value["type1"] == "release":
+                                                key_release(value["key"])
                                         elif value["type2"] == "sequentially":
-                                            wait_key_release_thread = threading.Thread(
-                                                target=wait_key_release,
-                                                args=(
-                                                    audio,
-                                                    key,
-                                                    value["type2"],
-                                                ),
-                                            )
-                                        wait_key_release_thread.start()
+                                            if audio not in key_index:
+                                                key_index[audio] = 0
+                                            else:
+                                                key_index[audio] += 1
+                                            key = [
+                                                value["key"][
+                                                    key_index[audio] % len(value["key"])
+                                                ]
+                                            ]
+                                            if value["type1"] == "click":
+                                                key_press(key)
+                                                key_release(key)
+                                            elif value["type1"] == "short_press":
+                                                key_press(key)
+                                            elif value["type1"] == "hold":
+                                                key_press(key)
+                                            elif value["type1"] == "release":
+                                                key_release(key)
+
+                                        def wait_key_release(audio, key, type2):
+                                            if type2 == "simultaneously":
+                                                wait_key_release_audio[audio] += 1
+                                                time.sleep(0.5)
+                                                wait_key_release_audio[audio] -= 1
+                                                if wait_key_release_audio[audio] == 0:
+                                                    key_release(key)
+                                            elif type2 == "sequentially":
+                                                time.sleep(0.5)
+                                                key_release(key)
+
+                                        if value["type1"] == "short_press":
+                                            if value["type2"] == "simultaneously":
+                                                wait_key_release_thread = (
+                                                    threading.Thread(
+                                                        target=wait_key_release,
+                                                        args=(
+                                                            audio,
+                                                            value["key"],
+                                                            value["type2"],
+                                                        ),
+                                                    )
+                                                )
+                                            elif value["type2"] == "sequentially":
+                                                wait_key_release_thread = (
+                                                    threading.Thread(
+                                                        target=wait_key_release,
+                                                        args=(
+                                                            audio,
+                                                            key,
+                                                            value["type2"],
+                                                        ),
+                                                    )
+                                                )
+                                            wait_key_release_thread.start()
                             time.sleep(0.001)
                     except Exception as e:
                         error_info = traceback.format_exc()
@@ -1660,6 +1721,25 @@ try:
         # 监听声音音量
         volume_energy_Lable = tk.Label(volume_threshold_frame)
         volume_energy_Lable.pack(side=tk.LEFT, padx=5, pady=1)
+
+        # 概率阈值容器
+        probability_threshold_frame = tk.Frame(left_frame)
+        probability_threshold_frame.pack(fill=tk.BOTH)
+
+        # 概率阈值
+        probability_threshold_entry = tk.Entry(probability_threshold_frame, width=5)
+        probability_threshold_entry.pack(side=tk.LEFT, padx=5, pady=1)
+
+        # 概率阈值设置
+        probability_threshold_set_button = tk.Button(
+            probability_threshold_frame,
+            command=on_probability_threshold_set_button_click,
+        )
+        probability_threshold_set_button.pack(side=tk.LEFT, padx=5, pady=1)
+
+        # 监听预测概率
+        probability_Lable = tk.Label(probability_threshold_frame)
+        probability_Lable.pack(side=tk.LEFT, padx=5, pady=1)
 
         # 模型测试容器
         model_test_frame = tk.Frame(left_frame)
