@@ -37,3 +37,6 @@ https://wolicheng.com/womic/download.html
 
 ### (2)7z compression
 https://sparanoid.com/lab/7z/download.html
+
+### (3) The audio output is forwarded to the audio input
+https://vb-audio.com/Cable/index.htm

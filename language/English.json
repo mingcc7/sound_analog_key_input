@@ -50,6 +50,7 @@
      "is_running": "Is running!",
      "volume_threshold_set": "Volume threshold set",
      "only_be_number": "Only be a number!",
-     "volume_threshold_cannot_less_1": "The volume threshold cannot be less than 1!",
-     "probability_threshold_set": "Probability threshold set"
+     "cannot_less_1": "Cannot be less than 1!",
+     "probability_threshold_set": "Probability threshold set",
+     "one_volume_count_set": "Single audio sampling number Settings"
 }

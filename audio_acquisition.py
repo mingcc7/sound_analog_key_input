@@ -10,6 +10,13 @@ acquisition_audio_name_queue = queue.Queue()
 acquisition_audio_energy_queue = queue.Queue()
 acquisition_audio_probability_queue = queue.Queue()
 volume_threshold_queue = queue.Queue()
+one_volume_count_queue = queue.Queue()
+
+# 实时音频采集参数
+CHUNK = 1024  # 每次读取的帧数
+FORMAT = pyaudio.paInt16  # 采样格式
+CHANNELS = 1  # 单声道
+RATE = 44100  # 采样率
 
 
 def audio_acquisition(use_model, save_path, stop_flag, save_flag):
@@ -27,13 +34,6 @@ def audio_acquisition(use_model, save_path, stop_flag, save_flag):
             # 加载标签编码器
             encoder = LabelEncoder()
             encoder.classes_ = np.load(save_path + "/classes.npy", allow_pickle=True)
-
-        # 实时音频采集参数
-        CHUNK = 1024  # 每次读取的帧数
-        FORMAT = pyaudio.paInt16  # 采样格式
-        CHANNELS = 1  # 单声道
-        RATE = 44100  # 采样率
-        RECORD_SECONDS = 0.03  # 每次采集的秒数
 
         # 设置声音活动检测的阈值
         THRESHOLD = 0.01  # 根据实际情况调整
@@ -53,41 +53,46 @@ def audio_acquisition(use_model, save_path, stop_flag, save_flag):
         print("Listening...")
 
         save_index = 1
-        frames_list = []
+        frames = []
+        data_np_list = np.empty((0,), dtype=np.int16)
         min_energy = float("inf")
         max_energy = float("-inf")
         audio_index = 0
+        zeros_data = np.zeros(CHUNK, dtype=np.int16).tobytes()
+        one_volume_count = 10  # 单个音频取样次数
         while not stop_flag.is_set():
-            frames = []
+            data = stream.read(CHUNK)
 
-            for i in range(0, int(RATE / CHUNK * RECORD_SECONDS)):
-                data = stream.read(CHUNK)
-                frames.append(data)
-
-            # 将音频数据转换为 numpy 数组
-            audio_data = np.frombuffer(b"".join(frames), dtype=np.int16)
+            # 将数据转换为NumPy数组
+            data_np = np.frombuffer(data, dtype=np.int16)
+            data_np_list = np.concatenate((data_np_list, data_np))
 
             # 计算音频片段的平均能量
-            energy = np.mean(np.abs(audio_data)) / 32767.0
+            energy = round((np.mean(np.abs(data_np)) / 32767.0) * 100, 2)
 
             if not volume_threshold_queue.empty():
                 THRESHOLD = volume_threshold_queue.get()
 
-            if energy > THRESHOLD or audio_index > 0:
+            if not one_volume_count_queue.empty():
+                one_volume_count = one_volume_count_queue.get()
+
+            if energy > THRESHOLD:
                 audio_index += 1
-                frames_list.extend(frames)
+                frames.append(data)
                 min_energy = min(min_energy, energy)
                 max_energy = max(max_energy, energy)
-            if len(frames_list) > 0 and audio_index == 5:
+            elif audio_index > 0:
+                for _ in range(1, one_volume_count - audio_index + 1):
+                    frames.append(zeros_data)
+                audio_index = one_volume_count
+
+            if len(frames) > 0 and audio_index == one_volume_count:
                 audio_index = 0
                 if use_model:
-                    # 保存为 .wav 文件
-                    with wave.open("temp.wav", "wb") as wf:
-                        wf.setnchannels(CHANNELS)
-                        wf.setsampwidth(p.get_sample_size(FORMAT))
-                        wf.setframerate(RATE)
-                        wf.writeframes(b"".join(frames_list))
-                    features = extract_features("temp.wav")
+                    data_np_list = data_np_list.astype(np.float32) / 32768.0
+                    features = extract_features(
+                        None, one_volume_count, data_np_list, RATE
+                    )
 
                     # 使用模型进行预测
                     predictions = model.predict(np.array([features]))
@@ -119,10 +124,11 @@ def audio_acquisition(use_model, save_path, stop_flag, save_flag):
                         wf.setnchannels(CHANNELS)
                         wf.setsampwidth(p.get_sample_size(FORMAT))
                         wf.setframerate(RATE)
-                        wf.writeframes(b"".join(frames_list))
+                        wf.writeframes(b"".join(frames))
                     save_flag.set()
 
-                frames_list = []
+                frames = []
+                data_np_list = np.empty((0,), dtype=np.int16)
                 min_energy = float("inf")
                 max_energy = float("-inf")
 

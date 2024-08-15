@@ -18,6 +18,7 @@ try:
     from audio_acquisition import acquisition_audio_energy_queue
     from audio_acquisition import acquisition_audio_probability_queue
     from audio_acquisition import volume_threshold_queue
+    from audio_acquisition import one_volume_count_queue
 
     from key_controls import key_listener
     from key_controls import bind_key_thread_stop_flag
@@ -131,6 +132,7 @@ try:
             bind_key_add_button["text"] = text_json["bind_key_add"]
 
             start_running_button["text"] = text_json["start_running"]
+            one_volume_count_set_button["text"] = text_json["one_volume_count_set"]
             volume_threshold_set_button["text"] = text_json["volume_threshold_set"]
             probability_threshold_set_button["text"] = text_json[
                 "probability_threshold_set"
@@ -174,8 +176,17 @@ try:
                 configuration_name_entry.insert(
                     0, configuration_json["now_configuration"]
                 )
-                volume_threshold_entry.delete(0, tk.END)
 
+                one_volume_count_entry.delete(0, tk.END)
+                if selected_value != "":
+                    one_volume_count_entry.insert(
+                        0,
+                        configuration_json["configuration"][selected_value][
+                            "one_volume_count"
+                        ],
+                    )
+
+                volume_threshold_entry.delete(0, tk.END)
                 if selected_value != "":
                     volume_threshold_entry.insert(
                         0,
@@ -185,7 +196,6 @@ try:
                     )
 
                 probability_threshold_entry.delete(0, tk.END)
-
                 if selected_value != "":
                     probability_threshold_entry.insert(
                         0,
@@ -255,6 +265,7 @@ try:
                         )
 
                     configuration_json["configuration"][configuration_name] = {
+                        "one_volume_count": 10,
                         "volume_threshold": 1.0,
                         "probability_threshold": 0.9,
                         "audio": {},
@@ -722,12 +733,15 @@ try:
             elif audio_acquisition_thread_stop_flag.is_set():
                 audio_acquisition_thread_stop_flag.clear()
                 audio_acquisition_thread_save_flag.clear()
-                volume_threshold = (
-                    configuration_json["configuration"][
-                        configuration_json["now_configuration"]
-                    ]["volume_threshold"]
-                    / 100
-                )
+
+                one_volume_count = configuration_json["configuration"][
+                    configuration_json["now_configuration"]
+                ]["one_volume_count"]
+                one_volume_count_queue.put(one_volume_count)
+
+                volume_threshold = configuration_json["configuration"][
+                    configuration_json["now_configuration"]
+                ]["volume_threshold"]
                 volume_threshold_queue.put(volume_threshold)
                 audio_acquisition_thread = threading.Thread(
                     target=audio_acquisition,
@@ -821,6 +835,9 @@ try:
                         text_json["tips"], text_json["audio_file_cannot_be_1"]
                     )
                 else:
+                    one_volume_count = configuration_json["configuration"][
+                        configuration_json["now_configuration"]
+                    ]["one_volume_count"]
                     model_training_thread_stop_flag.clear()
                     model_training_thread = threading.Thread(
                         target=model_training,
@@ -828,6 +845,7 @@ try:
                             audio_json,
                             f"configuration/{configuration_combo_var.get()}",
                             model_training_thread_stop_flag,
+                            one_volume_count,
                         ),
                     )
                     model_training_thread.start()
@@ -868,6 +886,41 @@ try:
             print(error_info)
             messagebox.showinfo("error", error_info)
 
+    # 单个音频取样次数
+    def on_one_volume_count_set_button_click():
+        try:
+            if configuration_combo_var.get() == "":
+                messagebox.showinfo(
+                    text_json["tips"], text_json["configuration_now_cannot_be_empty"]
+                )
+            else:
+                try:
+                    one_volume_count = int(one_volume_count_entry.get())
+                    if one_volume_count < 1:
+                        messagebox.showinfo(
+                            text_json["tips"],
+                            text_json["cannot_less_1"],
+                        )
+                    else:
+                        configuration_json["configuration"][
+                            configuration_json["now_configuration"]
+                        ]["one_volume_count"] = one_volume_count
+                        with open(
+                            configuration_json_path, "w", encoding="utf-8"
+                        ) as file:
+                            json.dump(
+                                configuration_json, file, ensure_ascii=False, indent=4
+                            )
+                        one_volume_count_queue.put(one_volume_count)
+                        messagebox.showinfo(text_json["tips"], text_json["success"])
+                except Exception as e:
+                    messagebox.showinfo(text_json["tips"], text_json["only_be_number"])
+
+        except Exception as e:
+            error_info = traceback.format_exc()
+            print(error_info)
+            messagebox.showinfo("error", error_info)
+
     # 音量阈值设置
     def on_volume_threshold_set_button_click():
         try:
@@ -881,7 +934,7 @@ try:
                     if volume_threshold < 1:
                         messagebox.showinfo(
                             text_json["tips"],
-                            text_json["volume_threshold_cannot_less_1"],
+                            text_json["cannot_less_1"],
                         )
                     else:
                         configuration_json["configuration"][
@@ -893,7 +946,7 @@ try:
                             json.dump(
                                 configuration_json, file, ensure_ascii=False, indent=4
                             )
-                        volume_threshold_queue.put(volume_threshold / 100)
+                        volume_threshold_queue.put(volume_threshold)
                         messagebox.showinfo(text_json["tips"], text_json["success"])
                 except Exception as e:
                     messagebox.showinfo(text_json["tips"], text_json["only_be_number"])
@@ -959,12 +1012,15 @@ try:
                 messagebox.showinfo(text_json["tips"], text_json["model_not_exist"])
             else:
                 model_test_thread_stop_flag.clear()
-                volume_threshold = (
-                    configuration_json["configuration"][
-                        configuration_json["now_configuration"]
-                    ]["volume_threshold"]
-                    / 100
-                )
+
+                one_volume_count = configuration_json["configuration"][
+                    configuration_json["now_configuration"]
+                ]["one_volume_count"]
+                one_volume_count_queue.put(one_volume_count)
+
+                volume_threshold = configuration_json["configuration"][
+                    configuration_json["now_configuration"]
+                ]["volume_threshold"]
                 volume_threshold_queue.put(volume_threshold)
                 audio_acquisition_thread = threading.Thread(
                     target=audio_acquisition,
@@ -997,9 +1053,7 @@ try:
                                     model_test_Lable["text"] = f"{index}:{name}"
                                     index += 1
 
-                                    energy = tuple(
-                                        f"{element * 100:.2f}" for element in energy
-                                    )
+                                    energy = tuple(f"{element}" for element in energy)
                                     volume_energy_Lable["text"] = (
                                         f"{energy[0]}-{energy[1]}"
                                     )
@@ -1204,7 +1258,7 @@ try:
             if min < 1 or max < 1:
                 messagebox.showinfo(
                     text_json["tips"],
-                    text_json["volume_threshold_cannot_less_1"],
+                    text_json["cannot_less_1"],
                 )
                 return
 
@@ -1396,12 +1450,9 @@ try:
                 messagebox.showinfo(text_json["tips"], text_json["model_not_exist"])
             else:
                 start_running_thread_stop_flag.clear()
-                volume_threshold = (
-                    configuration_json["configuration"][
-                        configuration_json["now_configuration"]
-                    ]["volume_threshold"]
-                    / 100
-                )
+                volume_threshold = configuration_json["configuration"][
+                    configuration_json["now_configuration"]
+                ]["volume_threshold"]
                 volume_threshold_queue.put(volume_threshold)
                 start_running_thread = threading.Thread(
                     target=audio_acquisition,
@@ -1439,10 +1490,9 @@ try:
                                         audio
                                     ].items():
                                         if not (
-                                            value["volume_threshold"][0] / 100
-                                            <= energy[1]
+                                            value["volume_threshold"][0] <= energy[1]
                                             and energy[1]
-                                            <= value["volume_threshold"][1] / 100
+                                            <= value["volume_threshold"][1]
                                         ):
                                             continue
 
@@ -1703,6 +1753,20 @@ try:
         # 模型训练结果
         model_training_Lable = tk.Label(model_training_frame)
         model_training_Lable.pack(side=tk.LEFT, padx=5, pady=1)
+
+        # 单个音频取样次数容器
+        one_volume_count_frame = tk.Frame(left_frame)
+        one_volume_count_frame.pack(fill=tk.BOTH)
+
+        # 单个音频取样次数
+        one_volume_count_entry = tk.Entry(one_volume_count_frame, width=5)
+        one_volume_count_entry.pack(side=tk.LEFT, padx=5, pady=1)
+
+        # 单个音频取样次数设置
+        one_volume_count_set_button = tk.Button(
+            one_volume_count_frame, command=on_one_volume_count_set_button_click
+        )
+        one_volume_count_set_button.pack(side=tk.LEFT, padx=5, pady=1)
 
         # 音量阈值容器
         volume_threshold_frame = tk.Frame(left_frame)

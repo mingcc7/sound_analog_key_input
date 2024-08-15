@@ -50,6 +50,7 @@
     "is_running": "正在运行！",
     "volume_threshold_set": "音量阈值设置",
     "only_be_number": "只能为数字！",
-    "volume_threshold_cannot_less_1": "音量阈值不可小于1！",
-    "probability_threshold_set": "概率阈值设置"
+    "cannot_less_1": "不可小于1！",
+    "probability_threshold_set": "概率阈值设置",
+    "one_volume_count_set": "单个音频取样次数设置"
 }

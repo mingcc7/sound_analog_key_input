@@ -11,22 +11,32 @@ from tkinter import messagebox
 import time
 import traceback
 
+from audio_acquisition import CHUNK
+from audio_acquisition import RATE
+
+zeros_data = np.zeros(CHUNK, dtype=np.int16)
+
 model_training_queue = queue.Queue()
 
-# 第一次加载慢
-librosa.load("temp.wav")
-
-
 # 音色特征提取函数
-def extract_features(file_path):
-    y, sr = librosa.load(file_path)  # 加载音频文件
-    mfccs = librosa.feature.mfcc(y=y, sr=sr, n_fft=512)  # 提取MFCC特征
+def extract_features(file_path, one_volume_count, y=None, sr=None):
+    if file_path != None:
+        y, sr = librosa.load(file_path, sr=RATE)  # 加载音频文件
+
+    count = int(len(y) / CHUNK)
+    if count < one_volume_count:
+        for _ in range(one_volume_count - count):
+            y = np.concatenate((y, zeros_data))
+    elif count > one_volume_count:
+        y = y[: one_volume_count * CHUNK]
+
+    mfccs = librosa.feature.mfcc(y=y, sr=sr, n_fft=CHUNK)  # 提取MFCC特征
     # mfccs_processed = np.mean(mfccs.T, axis=0)  # 平均化处理
     return mfccs.flatten()
 
 
 # 加载数据
-def load_data(audio_dirs, audio_path):
+def load_data(audio_dirs, audio_path, one_volume_count):
     features = []
     labels = []
 
@@ -34,7 +44,7 @@ def load_data(audio_dirs, audio_path):
         for filename in audio_dirs[label].keys():
             file_name = f"{audio_path}/{label}/{filename}"
             class_label = label
-            feature = extract_features(file_name)
+            feature = extract_features(file_name, one_volume_count)
             features.append(feature)
             labels.append(class_label)
 
@@ -43,9 +53,9 @@ def load_data(audio_dirs, audio_path):
     return features, labels
 
 
-def model_training(audio_dirs, configuration_path, stop_flag):
+def model_training(audio_dirs, configuration_path, stop_flag, one_volume_count):
     try:
-        X, y = load_data(audio_dirs, configuration_path + "/audio")
+        X, y = load_data(audio_dirs, configuration_path + "/audio", one_volume_count)
 
         # 编码标签
         encoder = LabelEncoder()

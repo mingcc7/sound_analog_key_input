@@ -37,3 +37,6 @@ https://wolicheng.com/womic/download.html
 
 ### (2)7z压缩
 https://sparanoid.com/lab/7z/download.html
+
+### (3)音频输出转发到音频输入
+https://vb-audio.com/Cable/index.htm
