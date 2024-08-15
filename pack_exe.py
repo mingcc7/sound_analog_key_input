@@ -11,7 +11,6 @@ PyInstaller.__main__.run(
 
 shutil.copy("configuration.json", "dist/sound_analog_key_input/configuration.json")
 shutil.copytree("language", "dist/sound_analog_key_input/language")
-shutil.copy("temp.wav", "dist/sound_analog_key_input/temp.wav")
 
 # 压缩
 command = [
