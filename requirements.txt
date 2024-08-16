@@ -8,5 +8,6 @@ scikit-learn
 librosa
 pynput
 pygame
+imblearn
 
 PyInstaller
