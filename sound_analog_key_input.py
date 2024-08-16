@@ -268,7 +268,7 @@ try:
 
                     configuration_json["configuration"][configuration_name] = {
                         "one_volume_count": 10,
-                        "volume_threshold": 3.0,
+                        "volume_threshold": 1.0,
                         "probability_threshold": 0.8,
                         "audio": {},
                     }
