@@ -267,9 +267,9 @@ try:
                         )
 
                     configuration_json["configuration"][configuration_name] = {
-                        "one_volume_count": 2,
-                        "volume_threshold": 5.0,
-                        "probability_threshold": 0.9,
+                        "one_volume_count": 10,
+                        "volume_threshold": 3.0,
+                        "probability_threshold": 0.8,
                         "audio": {},
                     }
                     with open(configuration_json_path, "w", encoding="utf-8") as file:
@@ -432,14 +432,12 @@ try:
             messagebox.showinfo("error", error_info)
 
     # 播放声音文件
+    pygame.mixer.init()
+
     def play_audio_file(file_path):
         try:
-            pygame.mixer.init()
             pygame.mixer.music.load(file_path)
-            pygame.mixer.music.play()
-            while pygame.mixer.music.get_busy():
-                pygame.time.Clock().tick(10)
-            pygame.quit()
+            pygame.mixer.music.play(1)
         except Exception as e:
             error_info = traceback.format_exc()
             print(error_info)
@@ -507,6 +505,8 @@ try:
                     text_json["verify"], text_json["want_to_continue"]
                 )
                 if answer == "yes":
+                    pygame.mixer.music.queue(file_path)
+                    pygame.mixer.music.unload()
                     os.remove(file_path)
                     audio_file_pack()
         except Exception as e:
@@ -850,7 +850,6 @@ try:
                             audio_json,
                             f"configuration/{configuration_combo_var.get()}",
                             model_training_thread_stop_flag,
-                            one_volume_count,
                         ),
                     )
                     model_training_thread.start()

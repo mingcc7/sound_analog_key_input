@@ -58,7 +58,6 @@ def audio_acquisition(use_model, save_path, stop_flag, save_flag, exception_text
         min_energy = float("inf")
         max_energy = float("-inf")
         audio_index = 0
-        zeros_data = np.zeros(CHUNK, dtype=np.int16).tobytes()
         one_volume_count = 10  # 单个音频取样次数
         while not stop_flag.is_set():
             data = stream.read(CHUNK)
@@ -82,17 +81,13 @@ def audio_acquisition(use_model, save_path, stop_flag, save_flag, exception_text
                 max_energy = max(max_energy, energy)
                 data_np_list = np.concatenate((data_np_list, data_np))
             elif audio_index > 0:
-                for _ in range(1, one_volume_count - audio_index + 1):
-                    frames.append(zeros_data)
                 audio_index = one_volume_count
 
             if len(frames) > 0 and audio_index >= one_volume_count:
                 audio_index = 0
                 if use_model:
                     data_np_list = data_np_list.astype(np.float32) / 32768.0
-                    features = extract_features(
-                        None, one_volume_count, data_np_list, RATE
-                    )
+                    features = extract_features(data_np_list, RATE)
                     data_np_list = np.empty((0,), dtype=np.int16)
 
                     # 使用模型进行预测
