@@ -438,6 +438,14 @@ try:
         try:
             pygame.mixer.music.load(file_path)
             pygame.mixer.music.play(1)
+            def music_unload():
+                while pygame.mixer.music.get_busy():
+                    pygame.time.Clock().tick(10)  # 控制循环的运行速度，避免CPU占用过高
+                pygame.mixer.music.unload()
+            music_unload_thread = threading.Thread(
+                target=music_unload
+            )
+            music_unload_thread.start()
         except Exception as e:
             error_info = traceback.format_exc()
             print(error_info)
@@ -505,8 +513,6 @@ try:
                     text_json["verify"], text_json["want_to_continue"]
                 )
                 if answer == "yes":
-                    pygame.mixer.music.queue(file_path)
-                    pygame.mixer.music.unload()
                     os.remove(file_path)
                     audio_file_pack()
         except Exception as e:
@@ -1045,12 +1051,14 @@ try:
                         while not model_test_thread_stop_flag.is_set():
                             if not audio_acquisition_thread.is_alive():
                                 on_audio_acquisition_stop_button_click()
+                            if not acquisition_audio_energy_queue.empty():
+                                energy = acquisition_audio_energy_queue.get(timeout=1)
                             if not acquisition_audio_name_queue.empty():
                                 probability = acquisition_audio_probability_queue.get(
                                     timeout=1
                                 )
                                 name = acquisition_audio_name_queue.get(timeout=1)
-                                energy = acquisition_audio_energy_queue.get(timeout=1)
+
                                 if (
                                     probability
                                     >= configuration_json["configuration"][

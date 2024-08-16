@@ -59,6 +59,7 @@ def audio_acquisition(use_model, save_path, stop_flag, save_flag, exception_text
         max_energy = float("-inf")
         audio_index = 0
         one_volume_count = 10  # 单个音频取样次数
+        not_volume_count = 0
         while not stop_flag.is_set():
             data = stream.read(CHUNK)
 
@@ -80,8 +81,11 @@ def audio_acquisition(use_model, save_path, stop_flag, save_flag, exception_text
                 min_energy = min(min_energy, energy)
                 max_energy = max(max_energy, energy)
                 data_np_list = np.concatenate((data_np_list, data_np))
+                not_volume_count = 0
             elif audio_index > 0:
-                audio_index = one_volume_count
+                not_volume_count += 1
+                if not_volume_count > 3:
+                    audio_index = one_volume_count
 
             if len(frames) > 0 and audio_index >= one_volume_count:
                 audio_index = 0

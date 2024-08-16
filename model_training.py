@@ -10,6 +10,8 @@ from keras.callbacks import Callback
 from tkinter import messagebox
 import time
 import traceback
+from imblearn.over_sampling import SMOTE
+from collections import Counter
 
 from audio_acquisition import CHUNK
 from audio_acquisition import RATE
@@ -29,9 +31,7 @@ def extract_features(y=None, sr=None):
 
     SPF = CHUNK * 3
     while len(y) < SPF:
-        y = np.concatenate(
-            (y, np.zeros(1, dtype=np.int16).astype(np.float32) / 32768.0)
-        )
+        y = np.concatenate((y, y))
 
     if maxPoint - SPF // 2 < 0:
         y = y[0:SPF]
@@ -43,7 +43,7 @@ def extract_features(y=None, sr=None):
     y = librosa.effects.preemphasis(y)  # 进行预加重
 
     # 提取梅尔频率倒谱系数（MFCCs）
-    mfcc = librosa.feature.mfcc(y=y, sr=sr, n_fft=CHUNK)
+    mfcc = librosa.feature.mfcc(y=y, sr=sr, n_fft=SPF)
 
     return mfcc.flatten()
 
@@ -77,9 +77,24 @@ def model_training(audio_dirs, configuration_path, stop_flag):
         y = encoder.fit_transform(y)
         y = to_categorical(y)
 
+        if y.shape[1] > 2:
+            # 将 y 中的每个元素转换为元组
+            y_tuples = [tuple(item) for item in y]
+            # 现在可以使用 Counter
+            class_counts = Counter(y_tuples)
+            # 设置 k_neighbors 为每个类别样本数量的一半（或者更小）
+            k_neighbors = min(class_counts.values()) // 2
+            # 确保至少有一个近邻
+            k_neighbors = max(1, k_neighbors)
+            # 创建 SMOTE 实例
+            smote = SMOTE(
+                k_neighbors=k_neighbors,
+            )
+            X, y = smote.fit_resample(X, y)
+
         # 数据集划分
         X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=0.2, random_state=42
+            X, y, test_size=0.3, random_state=42
         )
 
         # 创建Sequential模型
