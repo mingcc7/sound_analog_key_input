@@ -4,7 +4,11 @@
 
 Each voice input multiple audio, as a data set for model training, binding device input keys, so that the generation model to monitor each voice forecast, the result of the binding key for analog input.
 
-## 2. Install
+## 2. Software screenshot
+
+![Software screenshot](image.en.png)
+
+## 3. Install
 
 ### (1)conda creates the environment
 
@@ -30,7 +34,7 @@ python sound_analog_key_input.py
 
 python pack_exe.py
 
-## 3. Tips
+## 4. Tips
 
 ### (1) Cell phones become microphones for computers
 https://wolicheng.com/womic/download.html
