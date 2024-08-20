@@ -4,7 +4,11 @@
 
 每个声音录入多个音频，作为数据集进行模型训练，绑定设备输入按键后，使生成模型对监听到的每段声音进行预测，将结果绑定的按键进行模拟输入。
 
-## 2.安装
+## 2.软件截图
+
+![软件截图](image.png)
+
+## 3.安装
 
 ### (1)conda创建环境
 
@@ -30,7 +34,7 @@ python sound_analog_key_input.py
 
 python pack_exe.py
 
-## 3.提示
+## 4.提示
 
 ### (1)手机变成计算机的麦克风
 https://wolicheng.com/womic/download.html
